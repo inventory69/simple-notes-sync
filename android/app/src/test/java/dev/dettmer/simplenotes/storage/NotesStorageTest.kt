@@ -8,13 +8,17 @@ import dev.dettmer.simplenotes.models.SyncStatus
 import io.mockk.every
 import io.mockk.mockk
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -119,6 +123,16 @@ class NotesStorageTest {
         assertEquals(2, second.size)
     }
 
+    @Test fun `a write through another instance invalidates this instance's cache`() = runBlocking {
+        val context = mockk<Context> { every { filesDir } returns tmpDir }
+        storage.saveNote(note("x"))
+        assertEquals(1, storage.loadAllNotes().size)
+
+        NotesStorage(context).saveNote(note("y"))
+
+        assertEquals(2, storage.loadAllNotes().size)
+    }
+
     // ─── delete ───────────────────────────────────────────────────────────────
 
     @Test fun `deleteNote removes note from storage`() = runBlocking {
@@ -201,5 +215,70 @@ class NotesStorageTest {
 
         val nonTrashed = storage.loadNonTrashedNotes(forceReload = true)
         assertEquals(setOf("active", "archived"), nonTrashed.map { it.id }.toSet())
+    }
+
+    // ─── atomares Schreiben ───────────────────────────────────────────────────
+
+    @Test fun `a reader never sees a half-written note while it is being saved`() = runBlocking {
+        // Großer Inhalt, damit ein Schreiben ohne Temp-Datei lange genug "offen" wäre:
+        // writeText kürzt erst auf null, ein Leser dazwischen bekäme eine leere Datei.
+        val big = note("torn", content = "x".repeat(400_000))
+        storage.saveNote(big)
+        val writer = launch(Dispatchers.IO) {
+            repeat(60) { storage.saveNote(big.copy(title = "v$it")) }
+        }
+        var reads = 0
+        while (writer.isActive) {
+            assertNotNull("read $reads saw a torn file", storage.loadNote("torn"))
+            reads++
+        }
+        writer.join()
+        assertTrue("reader must have overlapped the writer", reads > 0)
+    }
+
+    @Test fun `a failed write keeps the previous version`() = runBlocking {
+        storage.saveNote(note("keep", content = "old"))
+        val notesDir = File(tmpDir, "notes")
+        notesDir.setWritable(false) // Temp-Datei lässt sich nicht anlegen → Schreiben scheitert
+        try {
+            assertThrows(IOException::class.java) {
+                runBlocking { storage.saveNote(note("keep", content = "new")) }
+            }
+        } finally {
+            notesDir.setWritable(true)
+        }
+        assertEquals("old", storage.loadNote("keep")!!.content)
+    }
+
+    @Test fun `saving leaves only the note file behind`() = runBlocking {
+        storage.saveNote(note("a"))
+        storage.saveNote(note("a", title = "again"))
+        assertEquals(listOf("a.json"), File(tmpDir, "notes").list()!!.toList())
+    }
+
+    // ─── updateNote ───────────────────────────────────────────────────────────
+
+    @Test fun `updateNote applies the change to the version on disk`() = runBlocking {
+        storage.saveNote(note("u", title = "first"))
+        // Ein anderer Schreiber (Editor) speichert, nachdem der Aufrufer seine Kopie geladen hat.
+        storage.saveNote(note("u", title = "first", content = "edited"))
+
+        val written = storage.updateNote("u") { it.copy(syncStatus = SyncStatus.SYNCED) }
+
+        assertEquals("edited", written!!.content)
+        val onDisk = storage.loadNote("u")!!
+        assertEquals("edited", onDisk.content)
+        assertEquals(SyncStatus.SYNCED, onDisk.syncStatus)
+    }
+
+    @Test fun `updateNote writes nothing when the transform declines`() = runBlocking {
+        storage.saveNote(note("d", title = "kept"))
+        assertNull(storage.updateNote("d") { null })
+        assertEquals("kept", storage.loadNote("d")!!.title)
+    }
+
+    @Test fun `updateNote does not create a missing note`() = runBlocking {
+        assertNull(storage.updateNote("gone") { it.copy(title = "zombie") })
+        assertNull(storage.loadNote("gone"))
     }
 }

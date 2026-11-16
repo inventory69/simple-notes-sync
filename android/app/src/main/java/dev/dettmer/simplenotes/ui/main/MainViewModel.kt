@@ -1,49 +1,22 @@
 package dev.dettmer.simplenotes.ui.main
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.dettmer.simplenotes.R
-import dev.dettmer.simplenotes.models.Folder
 import dev.dettmer.simplenotes.models.Note
-import dev.dettmer.simplenotes.models.NoteFilter
-import dev.dettmer.simplenotes.models.NoteType
-import dev.dettmer.simplenotes.models.SortDirection
-import dev.dettmer.simplenotes.models.SortOption
-import dev.dettmer.simplenotes.models.SyncStatus
+import dev.dettmer.simplenotes.storage.FolderStore
+import dev.dettmer.simplenotes.storage.NoteMutations
 import dev.dettmer.simplenotes.storage.NotesStorage
-import dev.dettmer.simplenotes.sync.E2eeGate
-import dev.dettmer.simplenotes.sync.ExportProblems
+import dev.dettmer.simplenotes.storage.TrashManager
 import dev.dettmer.simplenotes.sync.PendingServerDeletions
-import dev.dettmer.simplenotes.sync.Reachability
-import dev.dettmer.simplenotes.sync.SyncExceptionMapper
-import dev.dettmer.simplenotes.sync.SyncPhase
-import dev.dettmer.simplenotes.sync.SyncProgress
-import dev.dettmer.simplenotes.sync.SyncResult
-import dev.dettmer.simplenotes.sync.SyncScheduler
 import dev.dettmer.simplenotes.sync.SyncStateManager
-import dev.dettmer.simplenotes.sync.SyncStatusSummary
-import dev.dettmer.simplenotes.sync.SyncUrlBuilder
-import dev.dettmer.simplenotes.sync.WebDavSyncService
-import dev.dettmer.simplenotes.sync.buildSyncResultBanner
-import dev.dettmer.simplenotes.ui.main.components.SECTION_FOLDERS
-import dev.dettmer.simplenotes.ui.main.components.SECTION_NOTES
-import dev.dettmer.simplenotes.ui.main.components.SECTION_PINNED
-import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
-import dev.dettmer.simplenotes.ui.theme.NotePreviewLength
-import dev.dettmer.simplenotes.ui.theme.ThemePreferences
-import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.trashRetentionDays
-import dev.dettmer.simplenotes.widget.WidgetUpdateHelper
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -54,31 +27,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * ViewModel for MainActivity Compose
- * v1.5.0: Jetpack Compose MainActivity Redesign
- *
- * Manages notes list, sync state, and deletion with undo.
+ * ViewModel der Hauptliste und Kompositionspunkt ihrer Teile (Refactoring-Slice 2):
+ * [display] (Anzeige-Einstellungen), [query] (Sortierung, Filter, Suche), [selection],
+ * [folders], [trash] (Löschen mit Undo) und [sync] (Sync-Auslösung, Banner, Server-Löschungen).
+ * Hier bleiben die Notizliste, ihre sortierte Ansicht und die Aktionen auf ausgewählten Notizen.
  */
-@Suppress(
-    "TooManyFunctions", // 🔧 v1.10.0: Detekt compliance — class has many features
-    "LargeClass" // 🔧 v2.1.0 (F46): Extended with grid column control state
-)
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-
     companion object {
         private const val TAG = "MainViewModel"
-        private const val SNACKBAR_UNDO_DELAY_MS = 3500L
         private const val SEARCH_DEBOUNCE_MS = 300L
         const val EXTRA_FOLDER = "extra_folder"
 
@@ -86,27 +49,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         const val ACTION_SHOW_SYNC_STATUS = "dev.dettmer.simplenotes.action.SHOW_SYNC_STATUS"
     }
 
-    fun handleIncomingIntent(intent: Intent) {
-        intent.getStringExtra(EXTRA_FOLDER)?.let { enterFolder(it) }
-        if (intent.action == ACTION_SHOW_SYNC_STATUS) openSyncStatus()
-    }
-
+    private val ioDispatcher = Dispatchers.IO
     private val storage = NotesStorage(application)
-    private val prefs = application.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    private val folderStore = FolderStore(application)
     private val pendingServerDeletions = PendingServerDeletions(application)
-    private val folderStore = dev.dettmer.simplenotes.storage.FolderStore(application)
-
-    // 🆕 v2.9.0 (Trash): Papierkorb-Operationen (Löschen = in den Papierkorb verschieben).
-    private val trashManager = dev.dettmer.simplenotes.storage.TrashManager(
-        storage = storage,
-        pendingServerDeletions = pendingServerDeletions,
-        folderStore = folderStore,
-        retentionMs = { prefs.trashRetentionDays() * Constants.DAY_MS }
-    )
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Notes State
-    // ═══════════════════════════════════════════════════════════════════════
+    private val noteMutations = NoteMutations(storage, folderStore, pendingServerDeletions)
 
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
     val notes: StateFlow<List<Note>> = _notes.asStateFlow()
@@ -114,444 +61,111 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
-    private val _pendingDeletions = MutableStateFlow<Set<String>>(emptySet())
-    val pendingDeletions: StateFlow<Set<String>> = _pendingDeletions.asStateFlow()
+    private val _showSnackbar = MutableSharedFlow<SnackbarData>()
+    val showSnackbar: SharedFlow<SnackbarData> = _showSnackbar.asSharedFlow()
 
-    // 🆕 v2.7.0 (Folders): aktuell geöffneter Ordner (null = Root-Ansicht)
-    private val _currentFolder = MutableStateFlow<String?>(null)
-    val currentFolder: StateFlow<String?> = _currentFolder.asStateFlow()
+    // Phase 3: Scroll-to-top, wenn eine neue Notiz oben erscheint
+    private val _scrollToTop = MutableStateFlow(false)
+    val scrollToTop: StateFlow<Boolean> = _scrollToTop.asStateFlow()
 
-    // 🆕 v2.7.0 (Folders): bekannte Ordner (aus FolderStore)
-    private val _folders = MutableStateFlow<List<Folder>>(emptyList())
-    val folders: StateFlow<List<Folder>> = _folders.asStateFlow()
+    private val ctx = MainContext(application, viewModelScope, _showSnackbar, _notes, _scrollToTop) { loadNotes(it) }
+    private val prefs = ctx.prefs
 
-    // 🆕 v2.8.0 (Local-Only Folders): gerätespezifische Ordner, die nicht synchronisiert werden.
-    private val _localOnlyFolderNames = MutableStateFlow<Set<String>>(emptySet())
-    val localOnlyFolderNames: StateFlow<Set<String>> = _localOnlyFolderNames.asStateFlow()
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Multi-Select State (v1.5.0)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _selectedNotes = MutableStateFlow<Set<String>>(emptySet())
-    val selectedNotes: StateFlow<Set<String>> = _selectedNotes.asStateFlow()
-
-    private val _selectedFolders = MutableStateFlow<Set<String>>(emptySet()) // 🆕 v2.7.0 (Folders)
-    val selectedFolders: StateFlow<Set<String>> = _selectedFolders.asStateFlow()
-
-    val isSelectionMode: StateFlow<Boolean> =
-        combine(_selectedNotes, _selectedFolders) { n, f -> n.isNotEmpty() || f.isNotEmpty() }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🌟 v1.6.0: Offline Mode State (reactive)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _isOfflineMode = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
+    // 🆕 v2.9.0 (Trash): Löschen = in den Papierkorb verschieben
+    private val trashManager = TrashManager(
+        storage = storage,
+        pendingServerDeletions = pendingServerDeletions,
+        folderStore = folderStore,
+        retentionMs = { prefs.trashRetentionDays() * Constants.DAY_MS }
     )
-    val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
 
-    private val _isServerConfigured = MutableStateFlow(!_isOfflineMode.value && hasServerConfig())
+    // 🌟 v1.6.0: Server konfiguriert und Offline-Modus aus
+    private val _isServerConfigured = MutableStateFlow(serverConfigured())
     val isServerConfigured: StateFlow<Boolean> = _isServerConfigured.asStateFlow()
 
-    /**
-     * Refresh offline mode state from SharedPreferences
-     * Called when returning from Settings screen (in onResume)
-     */
-    fun refreshOfflineModeState() {
-        val oldValue = _isOfflineMode.value
-        val newValue = prefs.getBoolean(Constants.KEY_OFFLINE_MODE, Constants.DEFAULT_OFFLINE_MODE)
-        _isOfflineMode.value = newValue
-        _isServerConfigured.value = !newValue && hasServerConfig()
-        Logger.d(TAG, "🔄 refreshOfflineModeState: offlineMode=$oldValue → $newValue")
-    }
+    val display = MainDisplaySettings(prefs) { folders.currentFolder.value }
+    val query = NoteListQuery(prefs) { folders.currentFolder.value }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🎨 v1.7.0: Display Mode State
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _displayMode = MutableStateFlow(
-        prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE) ?: Constants.DEFAULT_DISPLAY_MODE
+    val sync: MainSyncController = MainSyncController(
+        app = application,
+        scope = viewModelScope,
+        pendingServerDeletions = pendingServerDeletions,
+        reloadNotes = { loadNotes(forceReload = true) },
+        reloadFolders = { folders.refreshFolders() },
+        showSnackbar = { _showSnackbar.emit(it) }
     )
-    val displayMode: StateFlow<String> = _displayMode.asStateFlow()
-
-    /**
-     * Refresh display mode from SharedPreferences
-     * Called when returning from Settings screen
-     */
-    fun refreshDisplayMode() {
-        val newValue =
-            prefs.getString(Constants.KEY_DISPLAY_MODE, Constants.DEFAULT_DISPLAY_MODE)
-                ?: Constants.DEFAULT_DISPLAY_MODE
-        _displayMode.value = newValue
-        Logger.d(TAG, "🔄 refreshDisplayMode: displayMode=${_displayMode.value} → $newValue")
+    val selection: MainSelection = MainSelection(viewModelScope, ::visibleNotes, ::selectableFolders)
+    val folders: MainFolders = MainFolders(ctx, folderStore, noteMutations, sync, selection) { folder ->
+        query.loadSortFor(folder)
+        display.loadCollapsedFor(folder)
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 v2.1.0 (F46): Grid Column Control State
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _gridAdaptiveScaling = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_GRID_ADAPTIVE_SCALING, Constants.DEFAULT_GRID_ADAPTIVE_SCALING)
-    )
-    val gridAdaptiveScaling: StateFlow<Boolean> = _gridAdaptiveScaling.asStateFlow()
-
-    private val _gridManualColumns = MutableStateFlow(
-        prefs.getInt(Constants.KEY_GRID_MANUAL_COLUMNS, Constants.DEFAULT_GRID_MANUAL_COLUMNS)
-    )
-    val gridManualColumns: StateFlow<Int> = _gridManualColumns.asStateFlow()
-
-    // 🆕 v2.11.0: Note preview length preset (List + Grid)
-    private val _notePreviewLength = MutableStateFlow(ThemePreferences.getNotePreviewLength(prefs))
-    val notePreviewLength: StateFlow<NotePreviewLength> = _notePreviewLength.asStateFlow()
-
-    /** Refresh note preview length from SharedPreferences. Called when returning from Settings screen. */
-    fun refreshNotePreviewLength() {
-        _notePreviewLength.value = ThemePreferences.getNotePreviewLength(prefs)
-    }
-
-    // 🆕 Issue #100: Zeitstempel/Icon auf Notizkarten ausblendbar
-    private val _showNoteTimestamp = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, Constants.DEFAULT_SHOW_NOTE_TIMESTAMP)
-    )
-    val showNoteTimestamp: StateFlow<Boolean> = _showNoteTimestamp.asStateFlow()
-
-    private val _showNoteTypeIcon = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
-    )
-    val showNoteTypeIcon: StateFlow<Boolean> = _showNoteTypeIcon.asStateFlow()
-
-    private val _hideCheckedInPreview = MutableStateFlow(
-        prefs.getBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, Constants.DEFAULT_HIDE_CHECKED_IN_PREVIEW)
-    )
-    val hideCheckedInPreview: StateFlow<Boolean> = _hideCheckedInPreview.asStateFlow()
-
-    /** Refresh note card display toggles from SharedPreferences. Called when returning from Settings screen. */
-    fun refreshNoteCardDisplaySettings() {
-        _showNoteTimestamp.value =
-            prefs.getBoolean(Constants.KEY_SHOW_NOTE_TIMESTAMP, Constants.DEFAULT_SHOW_NOTE_TIMESTAMP)
-        _showNoteTypeIcon.value =
-            prefs.getBoolean(Constants.KEY_SHOW_NOTE_TYPE_ICON, Constants.DEFAULT_SHOW_NOTE_TYPE_ICON)
-        _hideCheckedInPreview.value =
-            prefs.getBoolean(Constants.KEY_HIDE_CHECKED_IN_PREVIEW, Constants.DEFAULT_HIDE_CHECKED_IN_PREVIEW)
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 Collapsible Sections State (Pinned / Folders / Notes)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _collapsedSections = MutableStateFlow(
-        prefs.getStringSet(Constants.KEY_COLLAPSED_SECTIONS, emptySet()) ?: emptySet()
-    )
-    val collapsedSections: StateFlow<Set<String>> = _collapsedSections.asStateFlow()
-
-    // 🆕 Per-Ordner-Einklappzustand: Root behält den alten globalen Key (Rückwärtskompatibilität),
-    // andere Ordner bekommen einen eigenen Key-Namespace — analog zu sortOptionKey.
-    private fun collapsedSectionsKey(folder: String?): String =
-        if (folder == null) Constants.KEY_COLLAPSED_SECTIONS else "${Constants.KEY_COLLAPSED_SECTIONS}::$folder"
-
-    // Synchroner Read der pro-Ordner gespeicherten Einklapp-Sections — analog sortSettingsFor,
-    // von MainScreen genutzt, um die verschwindende Pane nach IHREM eigenen Ordner zu rendern.
-    fun collapsedSectionsFor(folder: String?): Set<String> =
-        prefs.getStringSet(collapsedSectionsKey(folder), emptySet()) ?: emptySet()
-
-    private fun loadCollapsedFor(folder: String?) {
-        _collapsedSections.value = collapsedSectionsFor(folder)
-    }
-
-    fun toggleSectionCollapsed(section: String) {
-        val updated = _collapsedSections.value.let { if (section in it) it - section else it + section }
-        _collapsedSections.value = updated
-        prefs.edit { putStringSet(collapsedSectionsKey(_currentFolder.value), updated) }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 Section Order State (Pinned / Folders / Notes reordering)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val defaultSectionOrder = listOf(SECTION_PINNED, SECTION_FOLDERS, SECTION_NOTES)
-
-    private val _sectionOrder = MutableStateFlow(loadSectionOrder())
-    val sectionOrder: StateFlow<List<String>> = _sectionOrder.asStateFlow()
-
-    private fun loadSectionOrder(): List<String> {
-        val raw = prefs.getString(Constants.KEY_SECTION_ORDER, null) ?: return defaultSectionOrder
-        val parsed = raw.split(",").filter { it in defaultSectionOrder }.distinct()
-        // Corrupted/incomplete prefs value → fall back to the safe default instead of patching it up.
-        return if (parsed.size == defaultSectionOrder.size) parsed else defaultSectionOrder
-    }
-
-    /** Swaps two sections' positions in the persisted order. No-op if either key is unknown/null. */
-    fun swapSections(sectionA: String, sectionB: String?) {
-        if (sectionB == null || sectionA == sectionB) return
-        val current = _sectionOrder.value
-        val idxA = current.indexOf(sectionA)
-        val idxB = current.indexOf(sectionB)
-        if (idxA == -1 || idxB == -1) return
-        val updated = current.toMutableList().also {
-            it[idxA] = sectionB
-            it[idxB] = sectionA
-        }
-        _sectionOrder.value = updated
-        prefs.edit { putString(Constants.KEY_SECTION_ORDER, updated.joinToString(",")) }
-    }
+    val trash: MainTrash = MainTrash(ctx, trashManager, folders, selection, sync)
 
     private val changelogGateCleared = MutableStateFlow(false)
 
-    /** Called from ComposeMainActivity once UpdateChangelogSheet has nothing left to show. */
-    fun onChangelogDismissed() {
-        changelogGateCleared.value = true
-    }
-
-    /**
-     * Refresh grid settings from SharedPreferences.
-     * Called when returning from Settings screen.
-     */
-    fun refreshGridSettings() {
-        _gridAdaptiveScaling.value = prefs.getBoolean(
-            Constants.KEY_GRID_ADAPTIVE_SCALING,
-            Constants.DEFAULT_GRID_ADAPTIVE_SCALING
-        )
-        _gridManualColumns.value = prefs.getInt(
-            Constants.KEY_GRID_MANUAL_COLUMNS,
-            Constants.DEFAULT_GRID_MANUAL_COLUMNS
-        )
-        Logger.d(
-            TAG,
-            "🔄 refreshGridSettings: adaptive=${_gridAdaptiveScaling.value}, columns=${_gridManualColumns.value}"
-        )
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 v1.9.0 (F05): Custom App Title State
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _customAppTitle = MutableStateFlow(
-        prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
-            ?: Constants.DEFAULT_CUSTOM_APP_TITLE
-    )
-    val customAppTitle: StateFlow<String> = _customAppTitle.asStateFlow()
-
-    /**
-     * Refresh custom app title from SharedPreferences.
-     * Called when returning from Settings screen (same pattern as refreshDisplayMode).
-     */
-    fun refreshCustomAppTitle() {
-        val newValue = prefs.getString(Constants.KEY_CUSTOM_APP_TITLE, Constants.DEFAULT_CUSTOM_APP_TITLE)
-            ?: Constants.DEFAULT_CUSTOM_APP_TITLE
-        _customAppTitle.value = newValue
-        Logger.d(TAG, "🔄 refreshCustomAppTitle: '$newValue'")
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🔀 v1.8.0: Sort State
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _sortOption = MutableStateFlow(
-        SortOption.fromPrefsValue(
-            prefs.getString(Constants.KEY_SORT_OPTION, Constants.DEFAULT_SORT_OPTION) ?: Constants.DEFAULT_SORT_OPTION
-        )
-    )
-    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
-
-    private val _sortDirection = MutableStateFlow(
-        SortDirection.fromPrefsValue(
-            prefs.getString(Constants.KEY_SORT_DIRECTION, Constants.DEFAULT_SORT_DIRECTION)
-                ?: Constants.DEFAULT_SORT_DIRECTION
-        )
-    )
-    val sortDirection: StateFlow<SortDirection> = _sortDirection.asStateFlow()
-
-    // 🆕 Per-Ordner-Sortierung: Root behält die alten globalen Keys (Rückwärtskompatibilität),
-    // andere Ordner bekommen einen eigenen Key-Namespace.
-    private fun sortOptionKey(folder: String?): String =
-        if (folder == null) Constants.KEY_SORT_OPTION else "${Constants.KEY_SORT_OPTION}::$folder"
-
-    private fun sortDirectionKey(folder: String?): String =
-        if (folder == null) Constants.KEY_SORT_DIRECTION else "${Constants.KEY_SORT_DIRECTION}::$folder"
-
-    // Synchronous prefs read used by MainScreen to sort the *outgoing* pane during a folder
-    // switch by its own folder's setting, independent of the (reactive, active-folder) sortOption/
-    // sortDirection StateFlows — see loadSortFor below and NotesPane.paneNotes in MainScreen.kt.
-    fun sortSettingsFor(folder: String?): Pair<SortOption, SortDirection> =
-        SortOption.fromPrefsValue(
-            prefs.getString(sortOptionKey(folder), Constants.DEFAULT_SORT_OPTION) ?: Constants.DEFAULT_SORT_OPTION
-        ) to SortDirection.fromPrefsValue(
-            prefs.getString(sortDirectionKey(folder), Constants.DEFAULT_SORT_DIRECTION)
-                ?: Constants.DEFAULT_SORT_DIRECTION
-        )
-
-    private fun loadSortFor(folder: String?) {
-        val (option, direction) = sortSettingsFor(folder)
-        _sortOption.value = option
-        _sortDirection.value = direction
-    }
-
-    // 🆕 v1.9.0 (F06): Note Filter State
-    private val _noteFilter = MutableStateFlow(
-        NoteFilter.fromPrefsValue(
-            prefs.getString(Constants.KEY_NOTE_FILTER, Constants.DEFAULT_NOTE_FILTER)
-                ?: Constants.DEFAULT_NOTE_FILTER
-        )
-    )
-    val noteFilter: StateFlow<NoteFilter> = _noteFilter.asStateFlow()
-
-    // 🆕 v2.5.0: Farbfilter — null = kein Filter, "#RRGGBB" = aktiver Farbfilter
-    private val _colorFilter = MutableStateFlow(
-        prefs.getString(Constants.KEY_COLOR_FILTER, Constants.DEFAULT_COLOR_FILTER)
-            ?.takeIf { it.isNotEmpty() }
-    )
-    val colorFilter: StateFlow<String?> = _colorFilter.asStateFlow()
-
-    // 🆕 v2.11.0 (Archive): Archiv-Ansicht — Session-only Toggle (nicht persistiert),
-    // gesteuert über den Archiv-Chip in der FilterChipRow.
-    private val _showArchived = MutableStateFlow(false)
-    val showArchived: StateFlow<Boolean> = _showArchived.asStateFlow()
-
-    fun setShowArchived(show: Boolean) {
-        _showArchived.value = show
-        // Archiv ist eine flache Liste — immer aus der Root-Ansicht heraus.
-        if (show) {
-            _currentFolder.value = null
-            loadSortFor(null)
-            loadCollapsedFor(null)
-        }
-        clearSelection()
-        Logger.d(TAG, "🗃️ Archive view: $show")
-    }
-
-    // 🆕 v2.5.0: Kombinierter Filter-State für sortedNotesUnfoldered.
-    // Nötig, da combine() nativ max. 5 Flows unterstützt; NoteFilter + Farbfilter werden
-    // zu einem Paar zusammengefasst, damit der Flow weiterhin 5 Flows nutzt.
-    // 🆕 v2.7.0 (Folders): Ordner-Filter ist NICHT mehr Teil dieser Pipeline — er wird erst
-    // pro AnimatedContent-Pane angewandt (sonst Flackern beim Ordnerwechsel, siehe MainScreen).
-    // 🆕 v2.11.0 (Archive): + showArchived → Triple statt Pair.
+    // 🆕 v2.5.0: Kombinierter Filter-State (combine() kann nativ max. 5 Flows). 🆕 v2.7.0: Der
+    // Ordner-Filter ist NICHT Teil dieser Pipeline, ihn wendet jede AnimatedContent-Pane selbst an
+    // (sonst Flackern beim Ordnerwechsel, siehe MainScreen).
     private val filterCriteria =
-        combine(_noteFilter, _colorFilter, _showArchived) { f, c, a -> Triple(f, c, a) }
+        combine(query.noteFilter, query.colorFilter, query.showArchived) { f, c, a -> Triple(f, c, a) }
 
-    // 🆕 v1.9.0 (F10): Search Query State
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    // 🆕 v2.16.0 (#141): Läuft gerade eine Suche? Solange sie läuft, entfällt der Ordner-Filter —
-    // die Suche geht über ALLE Ordner, sonst blieben Treffer in Ordnern unsichtbar.
-    // Wird bewusst IN sortedNotesUnfoldered gesetzt (nicht aus _searchQuery abgeleitet), damit die
-    // Flanke zur debounce-verzögerten Liste passt. Sonst zeigte die Pane 300 ms lang alle Notizen
-    // aus allen Ordnern ungefiltert, bevor die Suchtreffer nachkommen.
+    // 🆕 v2.16.0 (#141): Läuft gerade eine Suche? Dann entfällt der Ordner-Filter, die Suche geht
+    // über ALLE Ordner. Wird IN sortedNotesUnfoldered gesetzt (nicht aus dem Suchbegriff
+    // abgeleitet), damit die Flanke zur debounce-verzögerten Liste passt.
     private val _searchActive = MutableStateFlow(false)
     val searchActive: StateFlow<Boolean> = _searchActive.asStateFlow()
 
+    // Erste Notiz der sortierten Liste, um eine neue Notiz oben zu erkennen. Wird seit flowOn
+    // auch vom Default-Dispatcher geschrieben.
+    @Volatile
+    private var previousFirstSortedNoteId: String? = null
+
+    // Gesetzt beim Zurückkehren aus dem Editor, geleert nach dem nächsten Vergleich
+    @Volatile
+    private var expectNewNoteCheck = false
+
     /**
-     * 🔀 v1.8.0: Sortierte Notizen — kombiniert aus Notes + SortOption + SortDirection.
-     * 🆕 v1.9.0 (F06): + Filter nach NoteType
-     * 🆕 v1.9.0 (F10): + Volltextsuche über Titel und Inhalt
-     * 🆕 v2.5.0: + Farbfilter (via filterCriteria)
-     * 🆕 v2.7.0 (Folders): OHNE Ordner-Filter — jede AnimatedContent-Pane filtert selbst nach ihrem
-     * `folderKey` (verhindert Flackern, weil die abgehende Pane sonst kurz die Notizen des neuen
-     * Ordners zeigt). Ordner-bezogene Auswahl (selectAll) filtert `.value` ad hoc nach `_currentFolder`.
+     * Notizen gefiltert (Typ, Farbe, Archiv), durchsucht und sortiert, Angeheftete zuerst.
+     * OHNE Ordner-Filter: jede Pane filtert selbst nach ihrem `folderKey`.
      */
     @OptIn(kotlinx.coroutines.FlowPreview::class) // debounce(transform) is a preview API
     val sortedNotesUnfoldered: StateFlow<List<Note>> = combine(
         _notes,
-        _sortOption,
-        _sortDirection,
-        filterCriteria, // 🆕 v2.5.0: vorher _noteFilter
-        // 🔧 Perf: debounce search so every keystroke doesn't re-filter the full note list.
-        // Variable delay: 0ms when clearing the query so "clear search" feels instant.
-        _searchQuery.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
-    ) { notes, option, direction, filterCriteria, query ->
-        val (filter, colorFilter, showArchived) = filterCriteria
-        val filtered = filterNotes(notes, filter, colorFilter, showArchived)
-        val searched = searchNotes(filtered, query)
-        _searchActive.value = query.isNotBlank() // 🆕 v2.16.0 (#141): synchron zur ausgelieferten Liste
+        query.sortOption,
+        query.sortDirection,
+        filterCriteria,
+        // 🔧 Perf: Suche entprellt, Leeren sofort
+        query.searchQuery.debounce { q -> if (q.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
+    ) { notes, option, direction, criteria, search ->
+        val (filter, colorFilter, showArchived) = criteria
+        val searched = searchNotes(filterNotes(notes, filter, colorFilter, showArchived), search)
+        _searchActive.value = search.isNotBlank() // synchron zur ausgelieferten Liste
         val sorted = sortNotes(searched, option, direction)
         val result = sorted.filter { it.isPinned == true } + sorted.filter { it.isPinned != true }
 
-        // Detect new note at top of sorted list (after returning from editor)
         val newFirstId = result.firstOrNull()?.id
-        if (expectNewNoteCheck &&
-            newFirstId != null &&
-            previousFirstSortedNoteId != null &&
-            newFirstId != previousFirstSortedNoteId
-        ) {
+        if (expectNewNoteCheck && newFirstId != null && previousFirstSortedNoteId != null && newFirstId != previousFirstSortedNoteId) {
             _scrollToTop.value = true
-            Logger.d(TAG, "\uD83D\uDCDC New note detected at top, triggering scroll-to-top")
+            Logger.d(TAG, "📜 New note detected at top, triggering scroll-to-top")
         }
         expectNewNoteCheck = false
         previousFirstSortedNoteId = newFirstId
-
         result
     }.flowOn(Dispatchers.Default) // 🔧 Perf: filter/search/sort of the full list off the Main thread
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Sync State
-    // ═══════════════════════════════════════════════════════════════════════
+    /** 🆕 v2.5.0: Notizen je Farbe nach Typ-Filter (vor Farbfilter), Datenquelle des Farb-Dropdowns. */
+    val availableColors: StateFlow<Map<String?, Int>> = combine(_notes, query.noteFilter, query.showArchived) { notes, filter, archived ->
+        filterNotes(notes, filter, showArchived = archived).groupingBy { it.color }.eachCount()
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    // 🆕 v1.8.0 / 🔧 v1.10.0: Banner-System — min. Anzeigedauer pro Phase
-    val syncProgress: StateFlow<SyncProgress> = SyncStateManager.syncProgress
-        .withMinPhaseDuration(Constants.BANNER_PHASE_MIN_MS)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SyncProgress.IDLE)
-
-    /**
-     * 🔧 v1.10.0: Ensures each active sync phase (PREPARING/UPLOADING/DOWNLOADING/
-     * IMPORTING_MARKDOWN) is displayed for at least [minMs] milliseconds.
-     * Phase transitions IDLE→active and active→IDLE are not delayed, so the
-     * banner still appears and disappears quickly.
-     */
-    @Suppress("NestedBlockDepth") // inherently nested: flow → collect → if
-    private fun Flow<SyncProgress>.withMinPhaseDuration(minMs: Long): Flow<SyncProgress> = flow {
-        var lastEmitTime = 0L
-        var lastPhase = dev.dettmer.simplenotes.sync.SyncPhase.IDLE
-        collect { value ->
-            if (
-                value.phase != dev.dettmer.simplenotes.sync.SyncPhase.IDLE &&
-                lastPhase != dev.dettmer.simplenotes.sync.SyncPhase.IDLE &&
-                value.phase != lastPhase
-            ) {
-                val elapsed = System.currentTimeMillis() - lastEmitTime
-                val remaining = minMs - elapsed
-                if (remaining > 0) delay(remaining)
-            }
-            emit(value)
-            lastEmitTime = System.currentTimeMillis()
-            lastPhase = value.phase
-        }
-    }
-
-    // Intern: SyncState für PullToRefresh-Indikator
-    private val _syncState = MutableStateFlow(SyncStateManager.SyncState.IDLE)
-    val syncState: StateFlow<SyncStateManager.SyncState> = _syncState.asStateFlow()
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // UI Events
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _showSnackbar = MutableSharedFlow<SnackbarData>()
-    val showSnackbar: SharedFlow<SnackbarData> = _showSnackbar.asSharedFlow()
-
-    // Phase 3: Scroll-to-top when new note is created
-    private val _scrollToTop = MutableStateFlow(false)
-    val scrollToTop: StateFlow<Boolean> = _scrollToTop.asStateFlow()
-
-    // Track first note ID in sorted order to detect new notes at top
-    // 🔧 flowOn(Dispatchers.Default) on sortedNotesUnfoldered moves the combine lambda off Main,
-    // so this is now written from a background thread as well as from Main (notifyReturningFromEditor).
-    @Volatile
-    private var previousFirstSortedNoteId: String? = null
-
-    // Flag: set when returning from editor, cleared after loadNotes comparison
-    @Volatile
-    private var expectNewNoteCheck = false
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Data Classes
-    // ═══════════════════════════════════════════════════════════════════════
+    /** Notizen je Ordner für die Ordner-Kacheln; archivierte zählen nicht (v2.11.0). */
+    val folderNoteCounts: StateFlow<Map<String, Int>> = combine(_notes, folders.list) { notes, list ->
+        val counts = notes.filter { !it.isArchived }.groupingBy { it.folderName }.eachCount()
+        list.associate { f -> f.name to (counts[f.name] ?: 0) }
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     data class SnackbarData(
         val message: String,
@@ -560,1432 +174,172 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val longDuration: Boolean = false // 🆕 e.g. onboarding hints that need more time to read
     )
 
-    fun emitSnackbar(message: String, longDuration: Boolean = false) {
-        viewModelScope.launch {
-            _showSnackbar.emit(SnackbarData(message = message, longDuration = longDuration))
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Initialization
-    // ═══════════════════════════════════════════════════════════════════════
-
     init {
         // v2.3.0 (FIX-013): Check for stale sync state on every ViewModel init
-        // (covers configuration changes without process kill)
         SyncStateManager.checkAndResetStaleState()
+        // 🆕 Einmaliger Hinweis zum Umsortieren der Abschnitte, sobald das Changelog-Sheet fertig
+        // ist UND mindestens eine Abschnitts-Überschrift sichtbar ist.
         viewModelScope.launch {
-            _isOfflineMode.collect { offline ->
-                _isServerConfigured.value = !offline && hasServerConfig()
-            }
-        }
-        // 🆕 One-time section-reorder onboarding hint: fires once the changelog sheet has
-        // nothing left to show AND at least one section header is visible (see swapSections).
-        viewModelScope.launch {
-            combine(changelogGateCleared, sortedNotesUnfoldered, _folders) { gateCleared, notes, folders ->
-                gateCleared && (notes.any { it.isPinned == true } || folders.isNotEmpty())
+            combine(changelogGateCleared, sortedNotesUnfoldered, folders.list) { gateCleared, notes, list ->
+                gateCleared && (notes.any { it.isPinned == true } || list.isNotEmpty())
             }
                 .filter { it && !prefs.getBoolean(Constants.KEY_SECTION_REORDER_HINT_SHOWN, false) }
                 .take(1)
                 .collect {
                     prefs.edit { putBoolean(Constants.KEY_SECTION_REORDER_HINT_SHOWN, true) }
-                    emitSnackbar(getString(R.string.section_reorder_hint), longDuration = true)
+                    emitSnackbar(ctx.string(R.string.section_reorder_hint), longDuration = true)
                 }
         }
-        // v1.5.0 Performance: Load notes asynchronously to avoid blocking UI
-        _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
         viewModelScope.launch(ioDispatcher) {
             // 🆕 v2.9.0 (Trash): abgelaufene Papierkorb-Einträge automatisch endgültig löschen.
-            val purged = trashManager.purgeExpired()
-            if (purged > 0) triggerOnSaveSync()
+            if (trashManager.purgeExpired() > 0) ctx.triggerOnSaveSync()
             loadNotesAsync()
-            _folders.value = folderStore.loadFolders()
+            folders.reloadFromStore()
             _isReady.value = true
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Notes Actions
-    // ═══════════════════════════════════════════════════════════════════════
+    fun handleIncomingIntent(intent: Intent) {
+        intent.getStringExtra(EXTRA_FOLDER)?.let { folders.enterFolder(it) }
+        if (intent.action == ACTION_SHOW_SYNC_STATUS) sync.openSyncStatus()
+    }
+
+    /** Nach der Rückkehr aus den Einstellungen (onResume): Offline-Modus oder Server können sich geändert haben. */
+    fun refreshOfflineModeState() {
+        _isServerConfigured.value = serverConfigured()
+    }
+
+    private fun serverConfigured() = !ctx.isOfflineMode() && ctx.hasServerConfig()
+
+    /** Called from ComposeMainActivity once UpdateChangelogSheet has nothing left to show. */
+    fun onChangelogDismissed() {
+        changelogGateCleared.value = true
+    }
+
+    /** 🆕 v2.11.0 (Archive): Archiv ist eine flache Liste, immer aus der Root-Ansicht heraus. */
+    fun setShowArchived(show: Boolean) {
+        query.setShowArchived(show)
+        if (show) folders.show(null)
+        selection.clearSelection()
+    }
+
+    fun emitSnackbar(message: String, longDuration: Boolean = false) {
+        viewModelScope.launch { _showSnackbar.emit(SnackbarData(message = message, longDuration = longDuration)) }
+    }
 
     /**
-     * Load notes asynchronously on IO dispatcher
-     * This prevents UI blocking during app startup
+     * 🆕 v2.9.0 / v2.11.0: nur nicht-getrashte Notizen (archivierte bleiben, der Archiv-Filter
+     * arbeitet auf dieser Liste), ohne die Notizen im Undo-Fenster.
      */
     private suspend fun loadNotesAsync(forceReload: Boolean = false) {
-        // 🆕 v2.9.0 (Trash) / 🆕 v2.11.0 (Archive): nur nicht-getrashte Notizen — getrashte
-        // erscheinen ausschließlich im Papierkorb. Archivierte bleiben enthalten (Archiv-Filter
-        // arbeitet im ViewModel auf dieser Liste weiter, siehe filterNotes()).
-        val allNotes = storage.loadNonTrashedNotes(forceReload)
-        val pendingIds = _pendingDeletions.value
-        val filteredNotes = allNotes.filter { it.id !in pendingIds }
-
-        withContext(Dispatchers.Main) {
-            _notes.value = filteredNotes
-        }
+        val hidden = trash.hiddenIds.value
+        val visible = storage.loadNonTrashedNotes(forceReload).filter { it.id !in hidden }
+        withContext(Dispatchers.Main) { _notes.value = visible }
     }
 
-    /**
-     * Public loadNotes - delegates to async version
-     */
     fun loadNotes(forceReload: Boolean = false) {
-        viewModelScope.launch(ioDispatcher) {
-            loadNotesAsync(forceReload)
-        }
+        viewModelScope.launch(ioDispatcher) { loadNotesAsync(forceReload) }
     }
 
-    /**
-     * Reset scroll-to-top flag after scroll completed
-     */
     fun resetScrollToTop() {
         _scrollToTop.value = false
     }
 
-    /**
-     * Force scroll to top (e.g., after returning from editor)
-     */
     fun scrollToTop() {
         _scrollToTop.value = true
     }
 
-    /**
-     * Signal that we're returning from editor — enables new-note detection
-     * in the sortedNotes combine flow.
-     */
+    /** Beim Zurückkehren aus dem Editor: die nächste Liste darf eine neue Notiz oben melden. */
     fun notifyReturningFromEditor() {
         expectNewNoteCheck = true
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🆕 v1.9.0 (F13): Scroll-to-top after manual sync completion
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private val _syncCompletedScrollToTop = MutableStateFlow(false)
-    val syncCompletedScrollToTop: StateFlow<Boolean> = _syncCompletedScrollToTop.asStateFlow()
-
-    /**
-     * 🆕 v1.9.0 (F13): Reset the sync-scroll flag after the UI has scrolled.
-     */
-    fun resetSyncCompletedScrollToTop() {
-        _syncCompletedScrollToTop.value = false
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Multi-Select Actions (v1.5.0)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Toggle selection of a note
-     */
-    fun toggleNoteSelection(noteId: String) {
-        _selectedNotes.update { if (noteId in it) it - noteId else it + noteId }
-    }
-
-    /**
-     * Start selection mode with initial note
-     */
-    fun startSelectionMode(noteId: String) {
-        _selectedNotes.value = setOf(noteId)
-    }
-
-    /**
-     * Select all notes (kept for compatibility)
-     */
-    fun selectAllNotes() {
-        _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
-    }
-
-    /** 🆕 v2.7.0 (Folders): Notizen der aktuell sichtbaren Ordner-Ansicht (sortiert/gefiltert). */
-    private fun notesInCurrentFolder(): List<Note> =
-        if (_showArchived.value || _searchActive.value) {
-            // 🆕 v2.11.0 (Archive) / 🆕 v2.16.0 (#141, Suche): flache Liste über alle Ordner
+    /** 🆕 v2.7.0: Notizen der sichtbaren Ansicht. Archiv und Suche (#141) sind flach über alle Ordner. */
+    private fun visibleNotes(): List<Note> =
+        if (query.showArchived.value || _searchActive.value) {
             sortedNotesUnfoldered.value
         } else {
-            sortedNotesUnfoldered.value.filter { it.folderName == _currentFolder.value }
+            sortedNotesUnfoldered.value.filter { it.folderName == folders.currentFolder.value }
         }
 
-    /** 🆕 v2.7.0 (Folders): Alles auswählen — Notizen + (im Root) Ordner. */
-    fun selectAll() {
-        _selectedNotes.value = notesInCurrentFolder().map { it.id }.toSet()
-        // 🆕 v2.16.0 (#141): während einer Suche zeigt die Pane keine Ordner-Kacheln → keine mitauswählen
-        _selectedFolders.value = if (_currentFolder.value == null && !_showArchived.value && !_searchActive.value) {
-            _folders.value.map { it.name }.toSet()
+    /** Ordner-Kacheln gibt es nur im Root, nicht im Archiv und nicht während einer Suche (#141). */
+    private fun selectableFolders(): Set<String> =
+        if (folders.currentFolder.value == null && !query.showArchived.value && !_searchActive.value) {
+            folders.list.value.map { it.name }.toSet()
         } else {
             emptySet()
         }
-    }
 
-    /** 🆕 v2.7.0 (Folders): Ordner-Auswahl toggeln. */
-    fun toggleFolderSelection(name: String) {
-        _selectedFolders.update { if (name in it) it - name else it + name }
-    }
-
-    /** 🆕 v2.7.0 (Folders): Auswahl mit einem Ordner starten (Long-Press). */
-    fun startSelectionWithFolder(name: String) {
-        _selectedNotes.value = emptySet()
-        _selectedFolders.value = setOf(name)
-    }
-
-    /**
-     * Clear selection and exit selection mode
-     */
-    fun clearSelection() {
-        _selectedNotes.value = emptySet()
-        _selectedFolders.value = emptySet() // 🆕 v2.7.0 (Folders)
-    }
-
-    /**
-     * Get count of selected notes
-     */
-    fun getSelectedCount(): Int = _selectedNotes.value.size
-
-    /**
-     * 🆕 v2.9.0 (Trash): Verschiebt alle selektierten Notizen in den Papierkorb (mit Undo).
-     * Ersetzt das frühere harte `deleteSelectedNotes()`. Der Sync (der die Trash-Markierung
-     * hochlädt) wird erst nach Ablauf des Undo-Fensters ausgelöst.
-     */
-    fun moveSelectedToTrash() {
-        val selectedIds = _selectedNotes.value.toList()
-        val selectedNotes = _notes.value.filter { it.id in selectedIds }
-
-        if (selectedNotes.isEmpty()) return
-
-        _pendingDeletions.update { it + selectedIds.toSet() }
-
-        val count = selectedNotes.size
-        val message = if (prefs.trashRetentionDays() == 0) {
-            getQuantityString(R.plurals.snackbar_notes_deleted_permanently, count, count)
-        } else {
-            getQuantityString(R.plurals.snackbar_notes_trashed, count, count)
-        }
-
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                trashManager.moveToTrash(selectedNotes)
-            }
-            clearSelection()
-            loadNotes()
-
-            _showSnackbar.emit(
-                SnackbarData(
-                    message = message,
-                    actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoTrash(selectedNotes) }
-                )
-            )
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-
-            kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            finalizeTrashOrPurge(selectedNotes)
-        }
-    }
-
-    /**
-     * 🆕 v2.5.0 (Issue #65): Set background colour for all currently selected notes.
-     * Saves each note with the new colour and clears the selection afterwards.
-     */
+    /** 🆕 v2.5.0 (Issue #65): Farbe für alle ausgewählten Notizen und Ordner. */
     fun setColorForSelected(hex: String?) {
-        val noteIds = _selectedNotes.value.toList()
-        val folderNames = _selectedFolders.value.toList()
+        val noteIds = selection.selectedNotes.value
+        val folderNames = selection.selectedFolders.value
         if (noteIds.isEmpty() && folderNames.isEmpty()) return
-
         viewModelScope.launch {
             withContext(ioDispatcher) {
-                _notes.value
-                    .filter { it.id in noteIds }
-                    .forEach { note ->
-                        storage.saveNote(
-                            note.copy(
-                                color = hex,
-                                updatedAt = System.currentTimeMillis(),
-                                syncStatus = SyncStatus.PENDING
-                            )
-                        )
-                    }
-                // 🆕 v2.7.0 (Folders): Farbe auch auf selektierte Ordner anwenden
+                noteMutations.setColor(noteIds, hex)
                 folderNames.forEach { name -> folderStore.setColor(name, hex) }
             }
-            _folders.value = folderStore.loadFolders()
-            clearSelection()
+            folders.reloadFromStore()
+            selection.clearSelection()
             loadNotes()
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-            triggerOnSaveSync()
+            ctx.refreshWidgets()
+            ctx.triggerOnSaveSync()
         }
     }
 
     fun togglePinForSelected() {
-        val ids = _selectedNotes.value.toList()
+        val ids = selection.selectedNotes.value
         if (ids.isEmpty()) return
         val allPinned = _notes.value.filter { it.id in ids }.all { it.isPinned == true }
-        val newPinned = if (allPinned) null else true
         viewModelScope.launch {
-            withContext(ioDispatcher) {
-                _notes.value.filter { it.id in ids }.forEach { note ->
-                    storage.saveNote(
-                        note.copy(
-                            isPinned = newPinned,
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    )
-                }
-            }
-            clearSelection()
+            withContext(ioDispatcher) { noteMutations.setPinned(ids, if (allPinned) null else true) }
+            selection.clearSelection()
             loadNotes()
             _scrollToTop.value = true
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
+            ctx.refreshWidgets()
         }
     }
 
     /**
-     * 🆕 v2.11.0 (Archive): Archiviert/dearchiviert alle selektierten Notizen (Toggle).
-     * Wie togglePinForSelected(): sind bereits alle archiviert → aufheben, sonst archivieren.
-     * Snackbar mit Undo; Undo speichert die Originale mit frischem updatedAt zurück
-     * (LWW-sicher, falls zwischenzeitlich gesynct wurde).
+     * 🆕 v2.11.0 (Archive): Archivieren-Toggle für die Auswahl, wie beim Anheften: sind alle
+     * archiviert → aufheben, sonst archivieren. Mit Undo.
      */
     fun toggleArchiveForSelected() {
-        val ids = _selectedNotes.value.toList()
-        if (ids.isEmpty()) return
+        val ids = selection.selectedNotes.value
         val targets = _notes.value.filter { it.id in ids }
         if (targets.isEmpty()) return
         val allArchived = targets.all { it.isArchived }
-        val newValue: Long? = if (allArchived) null else System.currentTimeMillis()
+        val message = ctx.plural(if (allArchived) R.plurals.snackbar_notes_unarchived else R.plurals.snackbar_notes_archived, targets.size)
         viewModelScope.launch {
-            withContext(ioDispatcher) {
-                targets.forEach { note ->
-                    storage.saveNote(
-                        note.copy(
-                            archivedAt = newValue,
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    )
-                }
-            }
-            clearSelection()
-            loadNotes()
-            val count = targets.size
-            val message = if (allArchived) {
-                getQuantityString(R.plurals.snackbar_notes_unarchived, count, count)
-            } else {
-                getQuantityString(R.plurals.snackbar_notes_archived, count, count)
-            }
-            _showSnackbar.emit(
-                SnackbarData(
-                    message = message,
-                    actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoArchiveToggle(targets) }
-                )
-            )
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-            triggerOnSaveSync()
+            val originals = withContext(ioDispatcher) { noteMutations.setArchived(ids, archived = !allArchived) }
+            selection.clearSelection()
+            afterArchiveToggle(message, originals, forceReload = false)
         }
     }
 
-    /** 🆕 v2.11.0 (Archive): Undo — stellt den vorherigen archivedAt-Zustand mit frischem Timestamp wieder her. */
-    private fun undoArchiveToggle(originals: List<Note>) {
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                originals.forEach { note ->
-                    storage.saveNote(
-                        note.copy(
-                            updatedAt = System.currentTimeMillis(),
-                            syncStatus = SyncStatus.PENDING
-                        )
-                    )
-                }
-            }
-            loadNotes()
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-            triggerOnSaveSync()
-        }
-    }
-
-    /**
-     * 🆕 v2.11.0 (Archive): Editor-Archivierung — Notiz laden und archivedAt toggeln;
-     * Snackbar mit Undo (die Activity hat den Editor bereits geschlossen).
-     */
+    /** 🆕 v2.11.0: Archivieren aus dem Editor (die Activity hat ihn schon geschlossen), mit Undo. */
     fun toggleArchiveFromEditor(noteId: String) {
         viewModelScope.launch {
             val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
-            val newValue: Long? = if (note.isArchived) null else System.currentTimeMillis()
-            withContext(ioDispatcher) {
-                storage.saveNote(
-                    note.copy(
-                        archivedAt = newValue,
-                        updatedAt = System.currentTimeMillis(),
-                        syncStatus = SyncStatus.PENDING
-                    )
-                )
-            }
-            loadNotes(forceReload = true)
-            val message = if (newValue == null) {
-                getString(R.string.snackbar_note_unarchived, note.title)
-            } else {
-                getString(R.string.snackbar_note_archived, note.title)
-            }
-            _showSnackbar.emit(
-                SnackbarData(
-                    message = message,
-                    actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoArchiveToggle(listOf(note)) }
-                )
-            )
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-            triggerOnSaveSync()
+            val originals = withContext(ioDispatcher) { noteMutations.setArchived(listOf(noteId), archived = !note.isArchived) }
+            val messageRes = if (note.isArchived) R.string.snackbar_note_unarchived else R.string.snackbar_note_archived
+            val message = ctx.string(messageRes, note.title)
+            afterArchiveToggle(message, originals, forceReload = true)
         }
     }
 
-    /**
-     * 🆕 v2.9.0 (Trash): Undo für „in den Papierkorb verschieben" — speichert die unveränderten
-     * Originale (trashedAt = null, ursprünglicher Status/Timestamp) zurück. Wird vor Ablauf des
-     * Undo-Fensters aufgerufen, daher wurde noch kein Sync ausgelöst.
-     */
-    private fun undoTrash(notes: List<Note>) {
-        _pendingDeletions.update { it - notes.map { note -> note.id }.toSet() }
-
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                notes.forEach { note -> storage.saveNote(note) }
-            }
-            loadNotes()
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-        }
-    }
-
-    /**
-     * 🆕 v2.9.0 (Trash): Verschiebt eine einzelne Notiz in den Papierkorb (mit Undo).
-     * Ersetzt das frühere harte `deleteNoteConfirmed()`. Der Sync wird erst nach Ablauf des
-     * Undo-Fensters ausgelöst (lädt die Trash-Markierung hoch).
-     */
-    fun moveToTrash(note: Note) {
-        _pendingDeletions.update { it + note.id }
-
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                trashManager.moveToTrash(listOf(note))
-            }
-            loadNotes()
-
-            val message = if (prefs.trashRetentionDays() == 0) {
-                getString(R.string.snackbar_note_deleted_permanently, note.title)
-            } else {
-                getString(R.string.snackbar_note_trashed, note.title)
-            }
-            _showSnackbar.emit(
-                SnackbarData(
-                    message = message,
-                    actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoTrash(listOf(note)) }
-                )
-            )
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-
-            kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            finalizeTrashOrPurge(listOf(note))
-        }
-    }
-
-    /**
-     * 🆕 v2.9.0 (Trash): Wird aufgerufen, wenn eine Notiz im Editor gelöscht wurde.
-     * Lädt die (noch vorhandene) Notiz und verschiebt sie in den Papierkorb (mit Undo-Snackbar).
-     */
-    fun moveToTrashFromEditor(noteId: String) {
-        viewModelScope.launch {
-            val note = withContext(ioDispatcher) { storage.loadNote(noteId) } ?: return@launch
-            moveToTrash(note)
-        }
-    }
-
-    /**
-     * v2.5.0: Logik nach `sync/SyncScheduler` extrahiert (vorher dupliziert
-     * mit `NoteEditorViewModel.triggerOnSaveSync()`). Audit: 4-04.
-     */
-    private val syncScheduler by lazy { SyncScheduler(getApplication()) }
-
-    private fun triggerOnSaveSync() {
-        syncScheduler.triggerOnSaveSync(reason = "onDelete")
-    }
-
-    /**
-     * Attempts to delete notes from the server.
-     * If the server is not reachable, queues the deletions for the next sync.
-     *
-     * @return false, wenn eingereiht statt gelöscht wurde. Dann auch keine Ordner räumen.
-     */
-    private suspend fun attemptServerDeletion(deletions: List<PendingServerDeletions.PendingDeletion>): Boolean {
-        val webdavService = WebDavSyncService(getApplication())
-        queueReason(webdavService)?.let { reason ->
-            // Queue for next sync: server not reachable or locked right now
-            pendingServerDeletions.add(deletions)
-            deletions.forEach { finalizeDeletion(it.id) }
-            SyncStateManager.showInfo(getString(reason))
-            return false
-        }
-        // Server reachable → delete immediately (folderName korrekt übergeben)
-        val total = deletions.size
-        var successCount = 0
-        var failCount = 0
-        if (total > 1) {
-            SyncStateManager.updateProgress(
-                phase = SyncPhase.DELETING,
-                current = 0,
-                total = total,
-                currentFileName = null
-            )
-        }
-        for (deletion in deletions) {
-            if (total > 1) SyncStateManager.incrementProgress(currentFileName = null)
-            try {
-                val ok = withContext(ioDispatcher) {
-                    webdavService.deleteNoteFromServer(deletion.id, deletion.folderName)
-                }
-                if (ok) successCount++ else failCount++
-            } catch (e: Exception) {
-                Logger.w(TAG, "Failed to delete ${deletion.id} from server: ${e.message}")
-                failCount++
-            } finally {
-                _pendingDeletions.update { it - deletion.id }
+    private suspend fun afterArchiveToggle(message: String, originals: List<Note>, forceReload: Boolean) {
+        loadNotes(forceReload)
+        ctx.showUndo(message) {
+            viewModelScope.launch {
+                withContext(ioDispatcher) { noteMutations.restoreArchived(originals) }
+                loadNotes()
+                ctx.refreshWidgets()
+                ctx.triggerOnSaveSync()
             }
         }
-        val message = when {
-            failCount == 0 -> getQuantityString(
-                R.plurals.snackbar_notes_deleted_from_server,
-                successCount,
-                successCount
-            )
-            successCount == 0 -> getString(R.string.snackbar_server_delete_failed)
-            else -> getString(
-                R.string.snackbar_notes_deleted_from_server_partial,
-                successCount,
-                successCount + failCount
-            )
-        }
-        if (failCount == 0) SyncStateManager.showInfo(message) else SyncStateManager.showError(message)
-        return true
-    }
-
-    /** Warum Server-Löschungen jetzt nicht gehen (Hinweistext), oder null, wenn sie gehen. */
-    private suspend fun queueReason(service: WebDavSyncService): Int? = withContext(ioDispatcher) {
-        val isReachable = try {
-            service.isServerReachable()
-        } catch (e: Exception) {
-            Logger.d(TAG, "isServerReachable check failed during attemptServerDeletion: ${e.message}")
-            false
-        }
-        when {
-            !isReachable -> R.string.snackbar_delete_queued_for_sync
-            // 🆕 v2.20.0 (E2EE-Slice 1): verschlüsselter Ordner, erreichbar, aber gesperrt
-            service.isServerLocked() -> R.string.snackbar_delete_queued_e2ee
-            else -> null
-        }
-    }
-
-    /**
-     * Actually delete note from server after snackbar dismissed
-     */
-    fun deleteNoteFromServer(noteId: String) {
-        viewModelScope.launch {
-            try {
-                val webdavService = WebDavSyncService(getApplication())
-                val success = withContext(ioDispatcher) {
-                    webdavService.deleteNoteFromServer(noteId)
-                }
-
-                if (success) {
-                    // 🆕 v1.8.1 (IMPL_12): Toast → Banner INFO
-                    SyncStateManager.showInfo(getString(R.string.snackbar_deleted_from_server))
-                } else {
-                    SyncStateManager.showError(getString(R.string.snackbar_server_delete_failed))
-                }
-            } catch (e: Exception) {
-                SyncStateManager.showError(getString(R.string.snackbar_server_error, e.message.orEmpty()))
-            } finally {
-                // Remove from pending deletions
-                _pendingDeletions.update { it - noteId }
-            }
-        }
-    }
-
-    /**
-     * Finalize deletion (remove from pending set)
-     */
-    fun finalizeDeletion(noteId: String) {
-        _pendingDeletions.update { it - noteId }
-    }
-
-    /** Nach Ablauf des Undo-Fensters: bei Retention 0 endgültig löschen, sonst getrasht lassen. */
-    private suspend fun finalizeTrashOrPurge(candidates: List<Note>) {
-        val stillPending = candidates.filter { it.id in _pendingDeletions.value }
-        if (stillPending.isEmpty()) return
-        if (prefs.trashRetentionDays() == 0) {
-            withContext(ioDispatcher) { trashManager.purge(stillPending) }
-        }
-        stillPending.forEach { finalizeDeletion(it.id) }
-        triggerOnSaveSync()
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Sync Actions
-    // ═══════════════════════════════════════════════════════════════════════
-
-    fun updateSyncState(status: SyncStateManager.SyncStatus) {
-        _syncState.value = status.state
-        // Jeder Sync-Abschluss (UI oder Worker) läuft über SyncStateManager — die Prefs sind dann frisch.
-        refreshSyncStatus()
-    }
-
-    /** 🆕 v2.19.0: Inhalt des Sync-Status-Dialogs und Badge am Hilfe-Icon. */
-    private val _syncStatusSummary = MutableStateFlow(SyncStatusSummary.EMPTY)
-    val syncStatusSummary: StateFlow<SyncStatusSummary> = _syncStatusSummary.asStateFlow()
-
-    fun refreshSyncStatus() {
-        viewModelScope.launch(ioDispatcher) {
-            _syncStatusSummary.value = SyncStatusSummary.from(
-                // Ungefiltert wie unresolvedConflictCount: Ein Ordner- oder Suchfilter darf nichts verstecken.
-                notes = storage.loadAllNotes(),
-                localOnlyFolders = folderStore.getLocalOnlyFolderNames(),
-                exportProblems = ExportProblems.load(prefs),
-                lastSuccessAt = prefs.getLong(Constants.KEY_LAST_SUCCESSFUL_SYNC, 0L),
-                lastError = prefs.getString(Constants.KEY_LAST_SYNC_ERROR, null),
-                lastErrorAt = prefs.getLong(Constants.KEY_LAST_SYNC_ERROR_AT, 0L),
-                now = System.currentTimeMillis(),
-                e2eeBlocked = E2eeGate.isBlocked(prefs, SyncUrlBuilder(prefs))
-            )
-        }
-    }
-
-    private val _showSyncStatus = MutableStateFlow(false)
-    val showSyncStatus: StateFlow<Boolean> = _showSyncStatus.asStateFlow()
-
-    fun openSyncStatus() {
-        refreshSyncStatus()
-        _showSyncStatus.value = true
-    }
-
-    fun closeSyncStatus() {
-        _showSyncStatus.value = false
-    }
-
-    /**
-     * Trigger manual sync (from toolbar button or pull-to-refresh)
-     * v1.7.0: Uses central canSync() gate for WiFi-only check
-     * v1.8.0: Banner erscheint sofort beim Klick (PREPARING-Phase)
-     */
-    fun triggerManualSync(trigger: ActivityLog.Trigger) {
-        // ponytail: Alias hält die bestehenden "$source"-Logzeilen unverändert.
-        val source = trigger.name
-        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
-        val syncService = WebDavSyncService(getApplication())
-        val gateResult = syncService.canSync()
-        if (!gateResult.canSync) {
-            if (gateResult.isBlockedByWifiOnly) {
-                Logger.d(TAG, "⏭️ $source Sync blocked: WiFi-only mode, not on WiFi")
-                SyncStateManager.markError(getString(R.string.sync_wifi_only_error))
-            } else {
-                Logger.d(TAG, "⏭️ $source Sync blocked: ${gateResult.blockReason ?: "offline/no server"}")
-            }
-            return
-        }
-
-        // 🆕 v1.8.1 (IMPL_08): Globalen Cooldown markieren (verhindert Auto-Sync direkt danach)
-        // Manueller Sync prüft NICHT den globalen Cooldown (User will explizit synchronisieren)
-        val prefs = getApplication<android.app.Application>().getSharedPreferences(
-            Constants.PREFS_NAME,
-            android.content.Context.MODE_PRIVATE
-        )
-
-        // 🆕 v1.7.0: Feedback wenn Sync bereits läuft
-        // 🆕 v1.8.0: tryStartSync setzt sofort PREPARING → Banner erscheint instant
-        if (!SyncStateManager.tryStartSync(source)) {
-            if (SyncStateManager.isSyncing) {
-                // 🛡️ v1.8.2 (IMPL_24): Wenn ein Silent-Sync läuft, einfach sichtbar machen
-                // statt den User mit "already in progress" abzulehnen
-                if (SyncStateManager.promoteToVisible()) {
-                    Logger.d(TAG, "📢 $source: Promoted silent sync to visible")
-                    // Kein return — User sieht jetzt das Banner des laufenden Syncs
-                } else {
-                    Logger.d(TAG, "⏭️ $source Sync blocked: Another sync in progress")
-                    viewModelScope.launch {
-                        _showSnackbar.emit(
-                            SnackbarData(
-                                message = getString(R.string.sync_already_running),
-                                actionLabel = "",
-                                onAction = {}
-                            )
-                        )
-                    }
-                }
-            }
-            return
-        }
-
-        // 🆕 v1.8.1 (IMPL_08): Globalen Cooldown markieren (nach tryStartSync, vor Launch)
-        SyncStateManager.markGlobalSyncStarted(prefs)
-
-        viewModelScope.launch {
-            try {
-                // Check for unsynced changes (Banner zeigt bereits PREPARING)
-                if (!syncService.hasUnsyncedChanges()) {
-                    Logger.d(TAG, "⏭️ $source Sync: No unsynced changes")
-                    // 🆕 v2.19.0: offene Konflikte im Warn-Stil, wie nach einem echten Sync
-                    SyncStateManager.markCompleted(alreadySyncedBanner(), isWarning = unresolvedConflictCount() > 0)
-                    loadNotes(forceReload = true)
-                    refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
-                    // 🆕 v1.9.0 (F13): Scroll to top even for "already synced" on manual trigger
-                    _syncCompletedScrollToTop.value = true
-                    return@launch
-                }
-
-                // Check server reachability
-                val isReachable = withContext(ioDispatcher) {
-                    syncService.isServerReachable(userAction = true)
-                }
-
-                if (!isReachable) {
-                    Logger.d(TAG, "⏭️ $source Sync: Server not reachable")
-                    SyncStateManager.markError(getString(R.string.snackbar_server_unreachable))
-                    return@launch
-                }
-
-                // Perform sync
-                val result = withContext(ioDispatcher) {
-                    syncService.syncNotes(trigger)
-                }
-
-                if (result.isSuccess) {
-                    SyncStateManager.markCompleted(completionBanner(result), result.isWarning)
-                    loadNotes(forceReload = true)
-                    refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Sync aktualisieren
-                    // 🆕 v1.9.0 (F13): Scroll to top after manual sync with changes
-                    if (result.syncedCount > 0 || result.deletedOnServerCount > 0) {
-                        _syncCompletedScrollToTop.value = true
-                    }
-                } else if (result.e2eeBlocked) {
-                    SyncStateManager.markCompleted(result.errorMessage, isWarning = true) // 🆕 v2.20.0
-                } else {
-                    SyncStateManager.markError(result.errorMessage)
-                }
-            } catch (e: Exception) {
-                SyncStateManager.markError(e.message)
-            }
-        }
-    }
-
-    /**
-     * 🆕 v2.16.0: Die Abschlussmeldung eines Syncs.
-     *
-     * Ein stiller Sync (onResume) läuft dem sichtbaren oft um Sekunden voraus und hat den
-     * Konflikt dann schon erkannt. Dieser Zyklus zählt ihn nicht mehr mit und meldete bisher
-     * „Nichts zu synchronisieren", während in der Liste ein Warndreieck stand. Deshalb zählt
-     * [WebDavSyncService] in `conflictCount` den Ist-Zustand — offene Notizen, nicht Ereignisse
-     * dieses Laufs.
-     */
-    private suspend fun completionBanner(result: SyncResult): String =
-        buildSyncResultBanner(getApplication(), result)
-            ?: getString(R.string.snackbar_nothing_to_sync)
-
-    /** „Bereits synchronisiert" — es sei denn, eine Notiz wartet auf eine Entscheidung. */
-    private suspend fun alreadySyncedBanner(): String =
-        conflictBannerOrNull() ?: getString(R.string.toast_already_synced)
-
-    /**
-     * 🆕 v2.16.0: Wie viele Notizen gerade auf eine Konfliktentscheidung warten.
-     *
-     * Nicht aus [_notes] — das ist die gefilterte Liste, ein aktiver Ordner- oder Suchfilter
-     * würde die Zahl kleiner machen als sie ist. Der Storage-Cache beantwortet das ohne
-     * zusätzliche Datei-Reads.
-     */
-    private suspend fun unresolvedConflictCount(): Int =
-        storage.loadAllNotes().count { it.syncStatus == SyncStatus.CONFLICT }
-
-    /** Fertige Banner-Zeile, wenn Konflikte offen sind — sonst null. */
-    private suspend fun conflictBannerOrNull(): String? {
-        val count = unresolvedConflictCount()
-        if (count == 0) return null
-        return getApplication<Application>().resources.getQuantityString(
-            R.plurals.sync_conflict_count,
-            count,
-            count
-        )
-    }
-
-    /**
-     * Trigger auto-sync (onResume)
-     * Only runs if server is configured and interval has passed
-     * v1.5.0: Silent-Sync - kein Banner während des Syncs, Fehler werden trotzdem angezeigt
-     * v1.6.0: Configurable trigger - checks KEY_SYNC_TRIGGER_ON_RESUME
-     * v1.7.0: Uses central canSync() gate for WiFi-only check
-     */
-    // Abbau: TECH_DEBT_ROADMAP.md Slice 2
-    @Suppress("CyclomaticComplexMethod")
-    fun triggerAutoSync(trigger: ActivityLog.Trigger) {
-        // ponytail: Alias hält die bestehenden "$source"-Logzeilen unverändert.
-        val source = trigger.name
-        // 🌟 v1.6.0: Check if onResume trigger is enabled
-        if (!prefs.getBoolean(Constants.KEY_SYNC_TRIGGER_ON_RESUME, Constants.DEFAULT_TRIGGER_ON_RESUME)) {
-            Logger.d(TAG, "⏭️ onResume sync disabled - skipping")
-            return
-        }
-
-        // 🆕 v1.7.0: Zentrale Sync-Gate Prüfung (inkl. WiFi-Only, Offline Mode, Server Config)
-        val syncService = WebDavSyncService(getApplication())
-        val gateResult = syncService.canSync()
-        if (!gateResult.canSync) {
-            if (gateResult.isBlockedByWifiOnly) {
-                Logger.d(TAG, "⏭️ Auto-sync ($source) blocked: WiFi-only mode, not on WiFi")
-            } else {
-                Logger.d(TAG, "⏭️ Auto-sync ($source) blocked: ${gateResult.blockReason ?: "offline/no server"}")
-            }
-            return
-        }
-
-        // v1.5.0: silent=true → kein Banner bei Auto-Sync
-        // 🆕 v1.8.0: tryStartSync mit silent=true → SyncProgress.silent=true → Banner unsichtbar
-        if (!SyncStateManager.tryStartSync("auto-$source", silent = true)) {
-            Logger.d(TAG, "⏭️ Auto-sync ($source): Another sync already in progress")
-            return
-        }
-
-        Logger.d(TAG, "🔄 Auto-sync triggered ($source)")
-
-        viewModelScope.launch {
-            try {
-                // Check for unsynced changes
-                if (!syncService.hasUnsyncedChanges()) {
-                    Logger.d(TAG, "⏭️ Auto-sync ($source): No unsynced changes - skipping")
-                    // 🔧 v2.4.0 (FIX-SSBE-003): markCompleted statt reset()
-                    // silent=true → IDLE (identisch zu reset()); promoted → COMPLETED Banner
-                    SyncStateManager.markCompleted(getString(R.string.toast_already_synced))
-                    return@launch
-                }
-
-                // Check server reachability
-                val reachability = withContext(ioDispatcher) {
-                    syncService.reachability()
-                }
-
-                if (reachability != Reachability.Reachable) {
-                    Logger.d(TAG, "⏭️ Auto-sync ($source): Server not reachable - skipping silently")
-                    // 🔧 v2.4.0 (FIX-SSBE-002): Visibility-aware Termination statt reset()
-                    // Wenn promoted (silent=false): Fehler im Banner anzeigen
-                    // Wenn noch silent: IDLE (kein Banner, wie bisher)
-                    // 🆕 v2.21.0: Zertifikatsfehler mit eigener Meldung, landet im Sync-Status
-                    val skipMessage = (reachability as? Reachability.TlsError)
-                        ?.let { SyncExceptionMapper.sslMessage(it.kind) }
-                        ?: R.string.snackbar_server_unreachable
-                    SyncStateManager.errorIfVisible(getString(skipMessage))
-                    return@launch
-                }
-
-                // Perform sync
-                val result = withContext(ioDispatcher) {
-                    syncService.syncNotes(trigger)
-                }
-
-                if (result.isSuccess && result.syncedCount > 0) {
-                    Logger.d(TAG, "✅ Auto-sync successful ($source): ${result.syncedCount} notes")
-                    // 🆕 v1.8.1 (IMPL_11): Kein Toast bei Silent-Sync
-                    // Das Banner-System respektiert silent=true korrekt (markCompleted → IDLE)
-                    // Toast wurde fälschlicherweise trotzdem angezeigt
-                    // 🆕 v2.19.0: completionBanner enthält toast_sync_success plus Konflikte/Export-Probleme
-                    SyncStateManager.markCompleted(completionBanner(result), result.isWarning)
-                    loadNotes(forceReload = true)
-                    refreshFolders() // 🆕 v2.7.0 (Folders)
-                } else if (result.isSuccess && result.purgedFromServerCount > 0) {
-                    Logger.d(TAG, "✅ Auto-sync ($source): ${result.purgedFromServerCount} purged from server")
-                    SyncStateManager.promoteToVisible()
-                    SyncStateManager.markCompleted(buildSyncResultBanner(getApplication(), result), result.isWarning)
-                    loadNotes(forceReload = true)
-                } else if (result.isSuccess) {
-                    Logger.d(TAG, "ℹ️ Auto-sync ($source): No changes")
-                    // 🆕 v2.16.0: Meldung statt null — ein stiller Sync, den der Nutzer per
-                    // Toolbar/Pull sichtbar gemacht hat, endete sonst mit dem generischen
-                    // „Sync abgeschlossen", auch wenn gerade eine Notiz in den Konflikt lief.
-                    // Bleibt der Sync still, geht er ohnehin direkt auf IDLE.
-                    SyncStateManager.markCompleted(completionBanner(result), result.isWarning)
-                    // 🆕 v2.7.2: Ordner-Zuordnung wurde lokal geheilt → Notenliste neu laden
-                    // 🆕 Issue #128: dito, wenn ein falsches DELETED_ON_SERVER zurückgenommen wurde —
-                    // sonst bleibt die zurückgeholte Notiz bis zum nächsten Reload unsichtbar.
-                    if (result.foldersReconciled || result.restoredCount > 0) loadNotes(forceReload = true)
-                    // 🆕 v2.7.0 (Folders): Farbe leerer Ordner auch ohne Note-Sync ins UI laden
-                    if (result.foldersChanged || result.foldersReconciled) refreshFolders()
-                } else if (result.e2eeBlocked) {
-                    // 🆕 v2.20.0: still → IDLE, kein Fehler-Banner bei jedem App-Start
-                    SyncStateManager.markCompleted(result.errorMessage, isWarning = true)
-                } else {
-                    Logger.e(TAG, "❌ Auto-sync failed ($source): ${result.errorMessage}")
-                    // Fehler werden IMMER angezeigt (auch bei Silent-Sync)
-                    SyncStateManager.markError(result.errorMessage)
-                }
-            } catch (e: Exception) {
-                Logger.e(TAG, "💥 Auto-sync exception ($source): ${e.message}")
-                SyncStateManager.markError(e.message)
-            }
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 🔀 v1.8.0: Sortierung
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * 🆕 v1.9.0 (F06): Filtert Notizen nach NoteType.
-     * 🆕 v2.5.0: + optionaler Farbfilter (UND-Verknüpfung).
-     */
-    private fun filterNotes(
-        notes: List<Note>,
-        filter: NoteFilter,
-        colorFilter: String? = null, // 🆕 v2.5.0
-        showArchived: Boolean = false // 🆕 v2.11.0 (Archive)
-    ): List<Note> {
-        // 🆕 v2.7.0 (Folders): Kein Ordner-Filter hier — das übernimmt jede Pane selbst (s. sortedNotesUnfoldered).
-        // 🆕 v2.11.0 (Archive): Chip aus → nur aktive, Chip an → nur archivierte Notizen.
-        val byArchive = notes.filter { it.isArchived == showArchived }
-        val byType = when (filter) {
-            NoteFilter.ALL -> byArchive
-            NoteFilter.TEXT_ONLY -> byArchive.filter { it.noteType == NoteType.TEXT }
-            NoteFilter.CHECKLIST_ONLY -> byArchive.filter { it.noteType == NoteType.CHECKLIST }
-        }
-        return if (colorFilter != null) byType.filter { it.color == colorFilter } else byType
-    }
-
-    /**
-     * 🆕 v1.9.0 (F10): Filters notes by search query across title and content.
-     * Empty query returns all notes unchanged.
-     * Checklist notes are searched by joining all item texts.
-     */
-    private fun searchNotes(notes: List<Note>, query: String): List<Note> {
-        if (query.isBlank()) return notes
-        val lowerQuery = query.trim().lowercase()
-        return notes.filter { note ->
-            note.title.lowercase().contains(lowerQuery) ||
-                note.content.lowercase().contains(lowerQuery) ||
-                note.checklistItems?.any { item ->
-                    item.text.lowercase().contains(lowerQuery)
-                } == true
-        }
-    }
-
-    /**
-     * 🔀 v1.8.0: Sortiert Notizen nach gewählter Option und Richtung.
-     */
-    fun sortNotes(notes: List<Note>, option: SortOption, direction: SortDirection): List<Note> {
-        val comparator: Comparator<Note> = when (option) {
-            SortOption.UPDATED_AT -> compareBy { it.editedAt }
-            SortOption.CREATED_AT -> compareBy { it.createdAt }
-            SortOption.TITLE -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
-            SortOption.NOTE_TYPE -> compareBy<Note> { it.noteType.ordinal }
-                .thenByDescending { it.editedAt } // Sekundär: Datum innerhalb gleicher Typen
-            SortOption.COLOR -> {
-                // 🔧 Perf: Index-Map einmal vorab bauen statt pro Notiz die Palette zu durchsuchen
-                val hexToIndex = NoteColorPalette.slots.withIndex().associate { (i, slot) -> slot.hex to i }
-                compareBy<Note> { note -> hexToIndex[note.color] ?: Int.MAX_VALUE }
-                    .thenByDescending { it.editedAt } // Sekundär: Datum innerhalb gleicher Farbe
-            }
-        }
-
-        // Farbe hat keine Richtung: immer Palettenfolge (Rot … Grau), Notizen ohne Farbe am Ende (#131).
-        return when {
-            option == SortOption.COLOR || direction == SortDirection.ASCENDING -> notes.sortedWith(comparator)
-            else -> notes.sortedWith(comparator.reversed())
-        }
-    }
-
-    /**
-     * 🔀 v1.8.0: Setzt die Sortieroption und speichert in SharedPreferences.
-     */
-    fun setSortOption(option: SortOption) {
-        _sortOption.value = option
-        prefs.edit { putString(sortOptionKey(_currentFolder.value), option.prefsValue) }
-        Logger.d(TAG, "🔀 Sort option changed to: ${option.prefsValue} (folder=${_currentFolder.value})")
-    }
-
-    /**
-     * 🔀 v1.8.0: Setzt die Sortierrichtung und speichert in SharedPreferences.
-     */
-    fun setSortDirection(direction: SortDirection) {
-        _sortDirection.value = direction
-        prefs.edit { putString(sortDirectionKey(_currentFolder.value), direction.prefsValue) }
-        Logger.d(TAG, "🔀 Sort direction changed to: ${direction.prefsValue} (folder=${_currentFolder.value})")
-    }
-
-    /** Setzt die Sortierung des AKTUELLEN Ordners auf die App-Defaults zurück. */
-    fun resetSortToDefault() {
-        setSortOption(SortOption.fromPrefsValue(Constants.DEFAULT_SORT_OPTION))
-        setSortDirection(SortDirection.fromPrefsValue(Constants.DEFAULT_SORT_DIRECTION))
-    }
-
-    /**
-     * 🆕 v1.9.0 (F06): Setzt den Notiz-Filter und speichert in SharedPreferences.
-     */
-    fun setNoteFilter(filter: NoteFilter) {
-        _noteFilter.value = filter
-        prefs.edit { putString(Constants.KEY_NOTE_FILTER, filter.prefsValue) }
-        Logger.d(TAG, "🔍 Note filter changed to: ${filter.prefsValue}")
-    }
-
-    /**
-     * 🆕 v2.5.0: Aktiviert/deaktiviert den Farbfilter.
-     * @param hex Hex-String der Farbe (z.B. "#F28B82") oder null zum Aufheben.
-     */
-    fun setColorFilter(hex: String?) {
-        _colorFilter.value = hex
-        prefs.edit { putString(Constants.KEY_COLOR_FILTER, hex ?: "") }
-        Logger.d(TAG, "🎨 Color filter changed to: ${hex ?: "none"}")
-    }
-
-    /**
-     * 🆕 v2.5.0: Anzahl Notizen pro Farbe nach Typ-Filter (vor Farbfilter).
-     * Wird im Farbfilter-Dropdown als Datenquelle verwendet — zeigt nur Farben mit count > 0.
-     * Map-Key: Hex-String ("#F28B82") oder null (keine Farbe zugewiesen).
-     */
-    val availableColors: StateFlow<Map<String?, Int>> = combine(
-        _notes,
-        _noteFilter,
-        _showArchived // 🆕 v2.11.0 (Archive)
-    ) { notes, filter, showArchived ->
-        val visible = notes.filter { it.isArchived == showArchived }
-        val byType = when (filter) {
-            NoteFilter.ALL -> visible
-            NoteFilter.TEXT_ONLY -> visible.filter { it.noteType == NoteType.TEXT }
-            NoteFilter.CHECKLIST_ONLY -> visible.filter { it.noteType == NoteType.CHECKLIST }
-        }
-        byType.groupingBy { it.color }.eachCount()
-    }.flowOn(Dispatchers.Default) // 🔧 Perf: filter+group of the full list off the Main thread
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyMap()
-        )
-
-    // ─── 🆕 v2.7.0 (Folders) ──────────────────────────────────────────────
-
-    /** Anzahl Notizen je (bekanntem) Ordner — für die Folder-Karten im Root. */
-    val folderNoteCounts: StateFlow<Map<String, Int>> = combine(_notes, _folders) { notes, folders ->
-        // 🔧 Perf: eine Gruppierung statt einem .count{}-Scan der vollen Liste pro Ordner
-        // 🆕 v2.11.0 (Archive): archivierte Notizen zählen nicht (Ordner zeigen aktive Inhalte).
-        val counts = notes.filter { !it.isArchived }.groupingBy { it.folderName }.eachCount()
-        folders.associate { f -> f.name to (counts[f.name] ?: 0) }
-    }.flowOn(Dispatchers.Default) // 🔧 Perf: Gruppierung der vollen Liste off Main thread
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
-
-    /** 🆕 v2.8.0 (Local-Only Folders): [localOnly] markiert den Ordner VOR dem Anlegen als
-     *  „nur lokal", damit kein zwischenzeitlicher Sync-Lauf ihn auf den Server hochlädt. */
-    fun createFolder(name: String, localOnly: Boolean = false) {
-        val trimmed = name.trim()
-        // Bestehende Ordner nie still ausschließen — die Markierung gilt nur für echte Neuanlage.
-        val isNew = _folders.value.none { it.name.equals(trimmed, ignoreCase = true) }
-        val markLocalOnly = localOnly && isNew
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                if (markLocalOnly) {
-                    folderStore.setLocalOnly(trimmed, true)
-                    _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
-                }
-                folderStore.addFolder(trimmed, dirty = !markLocalOnly)
-            }
-            _folders.value = folderStore.loadFolders()
-            if (!markLocalOnly) triggerOnSaveSync()
-        }
-    }
-
-    /**
-     * 🆕 v2.8.0 (Local-Only Folders): Ordner vom Sync ausschließen.
-     * Alle Notizen darin → LOCAL_ONLY (lokaler Stand bleibt vollständig erhalten).
-     *
-     * [removeFromServer] = true: Server-Kopien der Notizen werden (offline-fähig via
-     * PendingServerDeletions-Queue) gelöscht, leere Ordner-Verzeichnisse beim Sync aufgeräumt
-     * und der folders.json-Eintrag als Tombstone propagiert (Server-Removal-Queue).
-     * [removeFromServer] = false: Server-Stand bleibt unangetastet („Auf Server behalten").
-     */
-    fun excludeFoldersFromSync(folderNames: Set<String>, removeFromServer: Boolean) {
-        if (folderNames.isEmpty()) return
-        val updated = _localOnlyFolderNames.value + folderNames
-        folderStore.setLocalOnlyFolderNames(updated)
-        if (removeFromServer) {
-            folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() + folderNames)
-        }
-        _localOnlyFolderNames.value = updated
-        clearSelection()
-
-        viewModelScope.launch(ioDispatcher) {
-            // Status-Snapshot VOR der Konvertierung: nur Notizen mit (potenzieller) Server-Kopie
-            // landen in der Lösch-Queue. LOCAL_ONLY war nie auf dem Server, DELETED_ON_SERVER ist dort weg.
-            val serverResident = setOf(SyncStatus.SYNCED, SyncStatus.PENDING, SyncStatus.CONFLICT)
-            val deletions = mutableListOf<PendingServerDeletions.PendingDeletion>()
-            for (note in storage.loadAllNotes()) {
-                if (note.folderName !in folderNames) continue
-                if (removeFromServer && note.syncStatus in serverResident) {
-                    deletions.add(PendingServerDeletions.PendingDeletion(note.id, note.folderName))
-                }
-                if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
-                    storage.saveNote(note.copy(syncStatus = SyncStatus.LOCAL_ONLY))
-                }
-            }
-            loadNotesAsync(forceReload = true)
-            if (removeFromServer) {
-                if (deletions.isNotEmpty()) {
-                    // Eingereiht statt gelöscht → die Ordner räumt der Sync nach den Löschungen.
-                    if (attemptServerDeletion(deletions)) {
-                        val webdavService = WebDavSyncService(getApplication())
-                        for (folder in folderNames) {
-                            try {
-                                webdavService.deleteServerFolderIfEmpty(folder)
-                            } catch (_: Exception) {
-                            }
-                        }
-                    }
-                } else {
-                    SyncStateManager.showInfo(getString(R.string.snackbar_folder_removed_from_server))
-                }
-                // Tombstone in folders.json propagieren; stiller Sync überschreibt das Banner nicht.
-                triggerOnSaveSync()
-            }
-        }
-    }
-
-    /**
-     * 🆕 v2.8.0 (Local-Only Folders): Ordner wieder in den Sync aufnehmen.
-     * LOCAL_ONLY-Notizen → PENDING (Upload beim nächsten Sync). touch() bumpt updatedAt des
-     * Ordner-Eintrags, damit ein evtl. Server-Tombstone den Ordner nicht sofort wieder löscht.
-     */
-    fun includeFoldersInSync(folderNames: Set<String>) {
-        if (folderNames.isEmpty()) return
-        val updated = _localOnlyFolderNames.value - folderNames
-        folderStore.setLocalOnlyFolderNames(updated)
-        folderStore.setServerRemovalQueue(folderStore.getServerRemovalQueue() - folderNames)
-        _localOnlyFolderNames.value = updated
-        clearSelection()
-
-        viewModelScope.launch(ioDispatcher) {
-            folderNames.forEach { folderStore.touch(it) }
-            val noteIds = mutableListOf<String>()
-            for (note in storage.loadAllNotes()) {
-                if (note.folderName !in folderNames) continue
-                noteIds.add(note.id)
-                if (note.syncStatus == SyncStatus.LOCAL_ONLY) {
-                    storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
-                }
-            }
-            // Safety: evtl. noch in der Queue stehende Löschungen für diese Notizen entfernen.
-            // Verhindert offline-Remove → Re-enable → Notiz wird beim nächsten Sync trotzdem gelöscht.
-            if (noteIds.isNotEmpty()) pendingServerDeletions.remove(noteIds)
-            loadNotesAsync(forceReload = true)
-            val webdavService = WebDavSyncService(getApplication())
-            val isReachable = try {
-                webdavService.isServerReachable(userAction = true)
-            } catch (_: Exception) {
-                false
-            }
-            if (isReachable) {
-                triggerManualSync(ActivityLog.Trigger.FOLDER_INCLUDE)
-            } else {
-                SyncStateManager.showInfo(getString(R.string.snackbar_folder_sync_queued))
-                triggerOnSaveSync()
-            }
-        }
-    }
-
-    /** 🆕 v2.7.0 (Folders): Ordner neu laden (onResume / nach Sync). Scrollt nach oben wenn 0→N. */
-    fun refreshFolders() {
-        viewModelScope.launch {
-            val before = _folders.value
-            val after = withContext(ioDispatcher) { folderStore.loadFolders() }
-            _folders.value = after
-            if (before.isEmpty() && after.isNotEmpty() && _currentFolder.value == null) {
-                _scrollToTop.value = true
-            }
-        }
-    }
-
-    /** 🆕 v2.7.0 (Folders): Ordner umbenennen und enthaltene Notizen migrieren. */
-    fun renameFolder(oldName: String, newName: String) {
-        val trimmed = newName.trim()
-        if (trimmed.equals(oldName, ignoreCase = true) || _folders.value.any { it.name.equals(trimmed, ignoreCase = true) }) return
-        // 🆕 v2.8.0 (Local-Only Folders): Notizen behalten ihren LOCAL_ONLY-Status, Markierung wandert mit.
-        val localOnly = _localOnlyFolderNames.value.any { it.equals(oldName, ignoreCase = true) }
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                _notes.value.filter { it.folderName == oldName }.forEach { note ->
-                    storage.moveNote(
-                        note.id,
-                        trimmed,
-                        newStatus = if (localOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
-                    )
-                    if (!localOnly && note.syncStatus != SyncStatus.LOCAL_ONLY) {
-                        pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldName, isMove = true))
-                        )
-                    }
-                }
-                folderStore.rename(oldName, trimmed)
-            }
-            _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
-            _folders.value = folderStore.loadFolders()
-            if (_currentFolder.value == oldName) {
-                _currentFolder.value = trimmed
-                loadSortFor(trimmed)
-                loadCollapsedFor(trimmed)
-            }
-            clearSelection()
-            loadNotes(forceReload = true)
-            triggerOnSaveSync()
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-        }
-    }
-
-    /**
-     * 🆕 v2.7.0 (Folders) / 🆕 v2.9.0 (Trash): Unified Delete — Notizen + Ordner (mit Undo).
-     * Notizen wandern in den Papierkorb; Ordner werden gelöscht (auf dem Server tombstoned, außer
-     * nur-lokale Ordner). Notizen aus gelöschten Ordnern werden im Papierkorb auf Root gesetzt; ihr
-     * alter Server-Pfad wird zum Löschen vorgemerkt, sonst belebt der nächste Sync den Ordner per
-     * `discoveredFolders` wieder. „Nur lokal löschen" entfällt — Löschen heißt jetzt Papierkorb.
-     */
-    @Suppress("LongMethod", "CyclomaticComplexMethod")
-    fun deleteSelection(keepContainedNotes: Boolean) {
-        val noteIds = _selectedNotes.value.toSet()
-        val folderNames = _selectedFolders.value.toSet()
-        // 🆕 v2.8.0 (Local-Only Folders): Markierung für Undo sichern (deleteFolder räumt sie auf).
-        val localOnlyDeleted = folderNames.filter { name ->
-            _localOnlyFolderNames.value.any { it.equals(name, ignoreCase = true) }
-        }.toSet()
-        val notesInFolders = _notes.value.filter { it.folderName in folderNames }
-        val notesToTrash = (
-            _notes.value.filter { it.id in noteIds } +
-                if (!keepContainedNotes) notesInFolders else emptyList()
-            ).distinctBy { it.id }
-        val notesToRoot = if (keepContainedNotes) notesInFolders.filter { it.id !in noteIds } else emptyList()
-
-        if (notesToTrash.isEmpty() && folderNames.isEmpty()) return
-
-        val trashIds = notesToTrash.map { it.id }
-        _pendingDeletions.update { it + trashIds.toSet() }
-        clearSelection()
-
-        val noteCount = notesToTrash.size
-        val folderCount = folderNames.size
-        val message = when {
-            folderCount > 0 && noteCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount) +
-                " · " + getQuantityString(R.plurals.snackbar_notes_trashed, noteCount, noteCount)
-            folderCount > 0 -> getQuantityString(R.plurals.snackbar_folders_deleted, folderCount, folderCount)
-            else -> getQuantityString(R.plurals.snackbar_notes_trashed, noteCount, noteCount)
-        }
-
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                // Notizen → Papierkorb. Notizen aus gelöschten Ordnern landen auf Root (Ordner verschwindet).
-                val processed = notesToTrash.map { note ->
-                    if (note.folderName != null && note.folderName in folderNames) note.copy(folderName = null) else note
-                }
-                trashManager.moveToTrash(processed)
-                // Notizen behalten → nach Root verschieben + alten Server-Pfad für Löschung eintragen.
-                notesToRoot.forEach { note ->
-                    storage.moveNote(note.id, null)
-                    if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
-                        pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, note.folderName, isMove = true))
-                        )
-                    }
-                }
-                // Ordner tombstonen — nur-lokale Ordner werden hard-entfernt, kein Tombstone zum Server.
-                folderNames.forEach { name ->
-                    folderStore.deleteFolder(name, propagateToServer = name !in localOnlyDeleted)
-                    ActivityLog.log(ActivityLog.Op.FOLDER_DELETE, ActivityLog.Src.LOCAL, folder = name)
-                }
-            }
-            _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
-            _folders.value = folderStore.loadFolders()
-            if (_currentFolder.value in folderNames) {
-                _currentFolder.value = null
-                loadSortFor(null)
-                loadCollapsedFor(null)
-            }
-            loadNotes()
-
-            _showSnackbar.emit(
-                SnackbarData(
-                    message = message,
-                    actionLabel = getString(R.string.snackbar_undo),
-                    onAction = { undoDeleteSelection(notesToTrash, folderNames, notesToRoot, localOnlyDeleted) }
-                )
-            )
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-
-            kotlinx.coroutines.delay(SNACKBAR_UNDO_DELAY_MS)
-            val stillPending = trashIds.filter { it in _pendingDeletions.value }
-            if (stillPending.isEmpty() && folderNames.isEmpty()) return@launch
-
-            // Server-Kopien der nach Root verschobenen getrashten Notizen (alter Ordnerpfad) löschen,
-            // damit der gelöschte Ordner nicht über eine zurückbleibende Datei wieder auftaucht.
-            val dels = notesToTrash
-                .filter {
-                    it.id in stillPending &&
-                        it.folderName != null &&
-                        it.folderName in folderNames &&
-                        it.syncStatus != SyncStatus.LOCAL_ONLY &&
-                        !folderStore.isLocalOnly(it.folderName)
-                }
-                .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
-            if (dels.isNotEmpty()) pendingServerDeletions.add(dels)
-            stillPending.forEach { finalizeDeletion(it) }
-
-            // Leere Ordner-Verzeichnisse vom Server löschen.
-            if (folderNames.isNotEmpty() && hasServerConfig() && !isOfflineMode.value) {
-                val service = WebDavSyncService(getApplication())
-                // 🆕 v2.20.0 (E2EE-Slice 1): ein Marker-GET für alle Ordner, gesperrt → nichts räumen.
-                // ponytail: ein leeres Server-Verzeichnis bleibt dann liegen, der Tombstone in folders.json gilt trotzdem.
-                val folders = if (service.isServerLocked()) emptyList() else folderNames.filter { it !in localOnlyDeleted }
-                folders.forEach { folderName ->
-                    try {
-                        withContext(ioDispatcher) { service.deleteServerFolderIfEmpty(folderName) }
-                    } catch (e: Exception) {
-                        Logger.w(TAG, "deleteServerFolderIfEmpty('$folderName') failed: ${e.message}")
-                    }
-                }
-            }
-            triggerOnSaveSync()
-        }
-    }
-
-    private fun undoDeleteSelection(
-        deletedNotes: List<Note>,
-        restoredFolders: Set<String>,
-        notesToRoot: List<Note>,
-        localOnlyFolders: Set<String> = emptySet() // 🆕 v2.8.0 (Local-Only Folders)
-    ) {
-        _pendingDeletions.update { it - deletedNotes.map { n -> n.id }.toSet() }
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                deletedNotes.forEach { note -> storage.saveNote(note) }
-                notesToRoot.forEach { note ->
-                    val intoLocalOnly = note.folderName != null && note.folderName in localOnlyFolders
-                    storage.moveNote(
-                        note.id,
-                        note.folderName,
-                        newStatus = if (intoLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
-                    )
-                }
-                restoredFolders.forEach { name ->
-                    // Markierung VOR addFolder wiederherstellen, damit kein Sync-Lauf den Ordner hochlädt.
-                    val wasLocalOnly = name in localOnlyFolders
-                    if (wasLocalOnly) folderStore.setLocalOnly(name, true)
-                    folderStore.addFolder(name, dirty = !wasLocalOnly)
-                }
-            }
-            _localOnlyFolderNames.value = folderStore.getLocalOnlyFolderNames()
-            _folders.value = folderStore.loadFolders()
-            loadNotes()
-        }
-    }
-
-    fun enterFolder(name: String) {
-        _currentFolder.value = name
-        loadSortFor(name)
-        loadCollapsedFor(name)
-    }
-
-    fun goToRoot() {
-        _currentFolder.value = null
-        loadSortFor(null)
-        loadCollapsedFor(null)
-    }
-
-    fun moveSelectedNotesTo(targetFolder: String?) {
-        val ids = _selectedNotes.value.toList()
-        if (ids.isEmpty()) return
-        val toMove = _notes.value.filter { it.id in ids }
-        // 🆕 v2.8.0 (Local-Only Folders): Ziel ausgeschlossen → Notiz wird LOCAL_ONLY statt PENDING
-        // (sonst bliebe sie dauerhaft als „ausstehend" markiert, ohne je hochgeladen zu werden).
-        // Die Server-Kopie am alten Pfad wird weiterhin gelöscht — die Notiz verlässt den Sync.
-        val targetLocalOnly = targetFolder != null &&
-            _localOnlyFolderNames.value.any { it.equals(targetFolder, ignoreCase = true) }
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                toMove.forEach { note ->
-                    val oldFolder = note.folderName
-                    if (oldFolder == targetFolder) return@forEach
-                    storage.moveNote(
-                        note.id,
-                        targetFolder,
-                        newStatus = if (targetLocalOnly) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
-                    )
-                    if (note.syncStatus != SyncStatus.LOCAL_ONLY) {
-                        // Ziel = normaler Sync-Ordner → Relocation (kein Ledger). Ziel = local-only →
-                        // die Notiz verlässt den Server echt → als Löschung ins Ledger (wie Desktop).
-                        pendingServerDeletions.add(
-                            listOf(PendingServerDeletions.PendingDeletion(note.id, oldFolder, isMove = !targetLocalOnly))
-                        )
-                    }
-                }
-                if (targetFolder != null) folderStore.addFolder(targetFolder)
-            }
-            _folders.value = folderStore.loadFolders()
-            clearSelection()
-            loadNotes(forceReload = true)
-            triggerOnSaveSync()
-            WidgetUpdateHelper.refreshAllWidgets(getApplication())
-        }
-    }
-
-    fun deleteFolder(name: String) {
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                folderStore.deleteFolder(name)
-                val stillHasNotes = _notes.value.any { it.folderName == name }
-                if (!stillHasNotes && hasServerConfig() && !isOfflineMode.value) {
-                    try {
-                        val service = WebDavSyncService(getApplication())
-                        if (!service.isServerLocked()) service.deleteServerFolderIfEmpty(name) // 🆕 v2.20.0
-                    } catch (e: Exception) {
-                        Logger.w(TAG, "deleteServerFolderIfEmpty failed: ${e.message}")
-                    }
-                }
-            }
-            _folders.value = folderStore.loadFolders()
-            if (_currentFolder.value == name) {
-                _currentFolder.value = null
-                loadSortFor(null)
-                loadCollapsedFor(null)
-            }
-            loadNotes(forceReload = true)
-        }
-    }
-
-    /**
-     * 🆕 v1.9.0 (F10): Setzt den Suchbegriff (session-only, nicht persistent).
-     */
-    fun setSearchQuery(query: String) {
-        _searchQuery.value = query
-        Logger.d(TAG, "🔎 Search query changed to: \"$query\"")
-    }
-
-    /**
-     * 🔀 v1.8.0: Toggelt die Sortierrichtung.
-     */
-    fun toggleSortDirection() {
-        val newDirection = _sortDirection.value.toggle()
-        setSortDirection(newDirection)
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Helpers
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private fun getString(resId: Int): String = getApplication<android.app.Application>().getString(resId)
-
-    private fun getString(resId: Int, vararg formatArgs: Any): String =
-        getApplication<android.app.Application>().getString(resId, *formatArgs)
-
-    private fun getQuantityString(resId: Int, quantity: Int, vararg formatArgs: Any): String =
-        getApplication<android.app.Application>().resources.getQuantityString(resId, quantity, *formatArgs)
-
-    /**
-     * 🌟 v1.6.0: Check if server has a configured URL (ignores offline mode)
-     * Used for determining if sync would be available when offline mode is disabled
-     */
-    fun hasServerConfig(): Boolean {
-        val serverUrl = prefs.getString(Constants.KEY_SERVER_URL, null)
-        return !serverUrl.isNullOrEmpty() && serverUrl != "http://" && serverUrl != "https://"
+        ctx.refreshWidgets()
+        ctx.triggerOnSaveSync()
     }
 }

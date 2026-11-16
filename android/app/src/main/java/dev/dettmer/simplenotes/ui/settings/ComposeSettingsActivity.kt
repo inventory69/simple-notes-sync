@@ -93,26 +93,26 @@ class ComposeSettingsActivity : AppCompatActivity() {
         setContent {
             // Live theme preview: theme state flows from SettingsViewModel so that
             // changes in DisplaySettingsScreen are immediately reflected here.
-            val themeMode by viewModel.themeMode.collectAsState()
-            val colorTheme by viewModel.colorTheme.collectAsState()
-            val fontSizeScale by viewModel.fontSizeScale.collectAsState()
+            val themeMode by viewModel.appearance.themeMode.collectAsState()
+            val colorTheme by viewModel.appearance.colorTheme.collectAsState()
+            val fontSizeScale by viewModel.appearance.fontSizeScale.collectAsState()
             // v2.1.0: NavController must live ABOVE SimpleNotesTheme so it survives
             // the Crossfade composition recreation on theme changes — otherwise
             // navigation resets to the start destination on every theme switch.
             val navController = rememberNavController()
             SimpleNotesTheme(themeMode = themeMode, colorTheme = colorTheme, fontSizeScale = fontSizeScale) {
                 AppLockGate {
-                    val showBatteryDialog by viewModel.showBatteryOptimizationDialog.collectAsState()
+                    val showBatteryDialog by viewModel.server.showBatteryOptimizationDialog.collectAsState()
 
                     // Battery optimization dialog (state-driven)
                     if (showBatteryDialog) {
                         AlertDialog(
-                            onDismissRequest = { viewModel.dismissBatteryOptimizationDialog() },
+                            onDismissRequest = { viewModel.server.dismissBatteryOptimizationDialog() },
                             title = { Text(getString(R.string.battery_optimization_dialog_title)) },
                             text = { Text(getString(R.string.battery_optimization_dialog_full_message)) },
                             confirmButton = {
                                 TextButton(onClick = {
-                                    viewModel.dismissBatteryOptimizationDialog()
+                                    viewModel.server.dismissBatteryOptimizationDialog()
                                     if (!BatteryOptimizationHelper.openBatteryOptimizationSettings(this)) {
                                         viewModel.showSnackbar(getString(R.string.battery_optimization_open_settings_failed))
                                     }
@@ -121,7 +121,7 @@ class ComposeSettingsActivity : AppCompatActivity() {
                                 }
                             },
                             dismissButton = {
-                                TextButton(onClick = { viewModel.dismissBatteryOptimizationDialog() }) {
+                                TextButton(onClick = { viewModel.server.dismissBatteryOptimizationDialog() }) {
                                     Text(getString(R.string.battery_optimization_later))
                                 }
                             }
@@ -179,7 +179,6 @@ class ComposeSettingsActivity : AppCompatActivity() {
                     is SettingsViewModel.SettingsEvent.RestartNetworkMonitor -> {
                         restartNetworkMonitor()
                     }
-                    else -> { /* handled via state */ }
                 }
             }
         }

@@ -52,10 +52,11 @@ class SyncConflictResolver(
      * Notiz für unverändert und überspringt sie ([NoteUploader] Skip-Logik).
      */
     suspend fun keepLocal(noteId: String): Boolean = withContext(ioDispatcher) {
-        val note = storage.loadNote(noteId) ?: return@withContext false
+        if (storage.loadNote(noteId) == null) return@withContext false
         eTagCache.batchUpdate(mapOf("etag_json_$noteId" to null))
         prefs.edit { remove("content_hash_$noteId") }
-        storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
+        // Erst die Caches leeren, dann PENDING: ein Sync dazwischen lädt sonst mit altem ETag hoch.
+        val note = storage.updateNote(noteId) { it.copy(syncStatus = SyncStatus.PENDING) } ?: return@withContext false
         ActivityLog.log(
             ActivityLog.Op.CONFLICT,
             ActivityLog.Src.LOCAL,

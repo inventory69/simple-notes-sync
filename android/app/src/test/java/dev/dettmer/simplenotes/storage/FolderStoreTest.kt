@@ -6,6 +6,9 @@ import io.mockk.every
 import io.mockk.mockk
 import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -34,6 +37,17 @@ class FolderStoreTest {
 
     @After fun tearDown() {
         tmpDir.deleteRecursively()
+    }
+
+    @Test fun `parallel adds through separate instances lose nothing`() = runBlocking {
+        val context = mockk<Context> {
+            every { filesDir } returns tmpDir
+            every { getSharedPreferences(any(), any()) } returns prefs
+        }
+        // Liste, Editor und Sync-Worker legen je eine eigene Instanz an.
+        (1..40).map { i -> launch(Dispatchers.IO) { FolderStore(context).addFolder("Folder$i") } }.joinAll()
+
+        assertEquals(40, store.loadFolders().size)
     }
 
     @Test fun `add and load deduplicates case-insensitively`() = runBlocking {

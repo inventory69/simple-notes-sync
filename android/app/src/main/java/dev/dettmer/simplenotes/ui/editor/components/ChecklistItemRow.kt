@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatIndentDecrease
+import androidx.compose.material.icons.automirrored.filled.FormatIndentIncrease
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -106,6 +108,9 @@ fun ChecklistItemRow(
     onCopyToChecklist: () -> Unit, // 🆕 v2.2.0: Aktion 3 — In andere Checkliste kopieren
     onAddToCalendar: () -> Unit,
     modifier: Modifier = Modifier,
+    canIndent: Boolean = false, // Unterpunkte: Einrücken möglich (nicht erste Zeile einer Sektion)
+    onIndent: () -> Unit = {},
+    onOutdent: () -> Unit = {},
     dragModifier: Modifier = Modifier, // 🆕 v1.8.0: IMPL_023 - Drag modifier for handle
     isCheckAnimating: Boolean = false, // 🆕 v2.5.0: Hoisted check-tap trigger (owned by DraggableChecklistItem)
     onCheckboxTap: () -> Unit = {}, // 🆕 v2.5.0: Notifies parent to set isCheckAnimating = true
@@ -177,6 +182,8 @@ fun ChecklistItemRow(
     // 🆕 v1.8.0: Focus-State tracken für Expand/Collapse
     var isFocused by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) } // 🆕 v2.2.0: MoreVert-Menü
+    // Unterpunkte: Ebene beim Öffnen merken, sonst wechselt der Eintrag beim Zuklappen sichtbar auf Ausrücken
+    var menuForChild by remember { mutableStateOf(false) }
 
     // 🆕 v1.8.0: Overflow erkennen (Text länger als maxLines)
     var hasOverflow by remember { mutableStateOf(false) }
@@ -340,7 +347,9 @@ fun ChecklistItemRow(
                     Modifier
                 }
             )
-            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp), // 🆕 v1.8.0: IMPL_023 - links kein Padding (Handle hat eigene Fläche)
+            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp) // 🆕 v1.8.0: IMPL_023 - links kein Padding (Handle hat eigene Fläche)
+            // Unterpunkte: die ganze Zeile rückt ein, der Griff wandert mit
+            .padding(start = INDENT_STEP * item.indentationLevel),
         verticalAlignment = if (hasOverflow) Alignment.Top else Alignment.CenterVertically // 🆕 v1.8.0: Dynamisch
     ) {
         // 🆕 v1.8.0: IMPL_023 - Vergrößerter Drag Handle (48dp Touch-Target)
@@ -543,7 +552,10 @@ fun ChecklistItemRow(
             // 🆕 v2.2.0: MoreVert-Button — sichtbar nur bei Fokus, immer allokiert (kein Layout-Sprung)
             Box {
                 IconButton(
-                    onClick = { showContextMenu = true },
+                    onClick = {
+                        menuForChild = item.indentationLevel > 0
+                        showContextMenu = true
+                    },
                     modifier = Modifier
                         .size(36.dp)
                         .alpha(if (isFocused && !isAnyItemDragging) 1f else 0f),
@@ -561,6 +573,39 @@ fun ChecklistItemRow(
                     expanded = showContextMenu,
                     onDismissRequest = { showContextMenu = false }
                 ) {
+                    // Unterpunkte: je nach Ebene Einrücken oder Ausrücken
+                    if (!menuForChild) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.checklist_indent)) },
+                            onClick = {
+                                onIndent()
+                                showContextMenu = false
+                            },
+                            enabled = canIndent,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.FormatIndentIncrease,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        )
+                    } else {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.checklist_outdent)) },
+                            onClick = {
+                                onOutdent()
+                                showContextMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.FormatIndentDecrease,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.checklist_copy_text)) },
                         onClick = {
@@ -648,6 +693,9 @@ fun ChecklistItemRow(
 
 // UI-Beta (C1): Deckkraft des Löschen-Kreuzes, gleich der des Griffs
 private const val DELETE_ICON_ALPHA_NEW_DESIGN = 0.6f
+
+// Unterpunkte: Einzug je Ebene (ungefähr Griff bis Checkbox-Mitte)
+private val INDENT_STEP = 28.dp
 
 // 🆕 v1.8.0: Maximum lines when collapsed (not focused)
 private const val COLLAPSED_MAX_LINES = 5

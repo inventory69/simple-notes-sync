@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -82,8 +83,12 @@ fun SettingsNavHost(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
+        // Nur aus dem stehenden Screen: ein Doppeltipp auf Zurück trifft sonst den noch ausblendenden
+        // Screen ein zweites Mal und poppt auch die Startseite weg, übrig bleibt ein leerer Screen.
+        val resumed = { navController.currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED }
+        val pop: () -> Unit = { if (resumed()) navController.popBackStack() }
         // 🆕 v2.19.0: Startseiten (Changelog, Sync, Server, ActivityLog) haben keinen Vorgänger, Zurück schließt dann.
-        val popOrFinish: () -> Unit = { if (!navController.popBackStack()) onFinish() }
+        val popOrFinish: () -> Unit = { if (resumed() && !navController.popBackStack()) onFinish() }
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -120,7 +125,7 @@ fun SettingsNavHost(
             // Language Settings
             composable(SettingsRoute.Language.route) {
                 LanguageSettingsScreen(
-                    onBack = { navController.popBackStack() }
+                    onBack = pop
                 )
             }
 
@@ -150,7 +155,7 @@ fun SettingsNavHost(
             composable(SettingsRoute.Backup.route) {
                 BackupSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = pop
                 )
             }
 
@@ -159,7 +164,7 @@ fun SettingsNavHost(
                 AboutScreen(
                     viewModel = viewModel,
                     onNavigate = { route -> navController.navigate(route.route) },
-                    onBack = { navController.popBackStack() }
+                    onBack = pop
                 )
             }
 
@@ -168,35 +173,35 @@ fun SettingsNavHost(
             }
 
             composable(SettingsRoute.Contributors.route) {
-                ContributorsScreen(onBack = { navController.popBackStack() })
+                ContributorsScreen(onBack = pop)
             }
 
             // Debug Settings
             composable(SettingsRoute.Debug.route) {
                 DebugSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = pop,
                     onNavigate = { route -> navController.navigate(route.route) }
                 )
             }
 
             // Kalender-Parsing-Experiment (Wegwerf-Screen, siehe DebugSettingsScreen)
             composable(SettingsRoute.CalendarParsingExperiment.route) {
-                CalendarParsingExperimentScreen(onBack = { navController.popBackStack() })
+                CalendarParsingExperimentScreen(onBack = pop)
             }
 
             // 🎨 v1.7.0: Display Settings
             composable(SettingsRoute.Display.route) {
                 DisplaySettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = pop
                 )
             }
 
             // 🆕 v2.9.0 (Trash): Papierkorb
             composable(SettingsRoute.Trash.route) {
                 TrashScreen(
-                    onBack = { navController.popBackStack() },
+                    onBack = pop,
                     onShowSnackbar = { message ->
                         scope.launch {
                             snackbarHostState.currentSnackbarData?.dismiss()
@@ -218,7 +223,7 @@ fun SettingsNavHost(
             composable(SettingsRoute.Security.route) {
                 SecuritySettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = pop
                 )
             }
 
@@ -226,7 +231,7 @@ fun SettingsNavHost(
             composable(SettingsRoute.Import.route) {
                 ImportSettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = pop,
                     onKeepImportSnackbar = { data ->
                         scope.launch {
                             snackbarHostState.currentSnackbarData?.dismiss()

@@ -1,0 +1,13 @@
+🪆 v2.24.0 - Checklist sub-items
+
+• Checklists get one level of sub-items
+• Editor: a second tap removes bold, italic etc.
+• New design: formatting bar follows the keyboard
+• Fix: notes stay intact if saving is interrupted
+• Fix: edits made during a sync are kept
+• Fix: moving notes on Apache and Nextcloud
+• Fix: long notes no longer blank the widgets
+• Fix: very long words no longer close the app
+• And more...
+
+Thanks to @ASFHU, @hgwebs4 and @Fs00!

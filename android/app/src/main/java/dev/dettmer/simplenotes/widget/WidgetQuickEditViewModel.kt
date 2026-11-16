@@ -98,12 +98,14 @@ class WidgetQuickEditViewModel(
     fun save() {
         val current = note ?: return
         viewModelScope.launch {
-            val updated = buildUpdatedNote(current, _state.value.text)
+            // Auf dem Stand der Platte aufsetzen, nicht auf der beim Öffnen geladenen Kopie: was
+            // inzwischen dazukam (Sync, Abhaken im Widget), bliebe sonst auf der Strecke.
+            val text = _state.value.text
+            val updated = storage.updateNote(current.id) { buildUpdatedNote(it, text) }
             if (updated == null) {
                 _events.emit(QuickEditEvent.Close)
                 return@launch
             }
-            storage.saveNote(updated)
             note = updated
             SyncScheduler(getApplication()).triggerOnSaveSync(reason = "widgetQuickEdit")
             WidgetUpdateHelper.refreshAllWidgets(getApplication())

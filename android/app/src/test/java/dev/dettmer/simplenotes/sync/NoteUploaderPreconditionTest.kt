@@ -110,6 +110,7 @@ class NoteUploaderPreconditionTest {
         givenPendingNote()
         val ifMatch = slot<String>()
         val webdav = webdav {
+            serverHasNote(cachedETag)
             every { put(any(), any(), any(), capture(ifMatch)) } returns "\"server-v2\""
         }
 
@@ -121,6 +122,7 @@ class NoteUploaderPreconditionTest {
     @Test fun `a 412 marks the note CONFLICT instead of overwriting the server version`() = runTest {
         givenPendingNote()
         val webdav = webdav {
+            serverHasNote(cachedETag)
             every { put(any(), any(), any(), any()) } throws WebDavException("PUT failed: 412", 412)
         }
 
@@ -143,6 +145,7 @@ class NoteUploaderPreconditionTest {
         val flag = slot<Boolean>()
         every { connectionManager.preconditionsUnsupported = capture(flag) } just Runs
         val webdav = webdav {
+            serverHasNote(cachedETag)
             every {
                 put(any(), any(), any(), isNull(inverse = true))
             } throws WebDavException("PUT failed: 501", 501)
@@ -212,6 +215,32 @@ class NoteUploaderPreconditionTest {
 
         assertEquals(1, result.uploadedCount)
         assertEquals(0, result.conflictCount)
+    }
+
+    // Verschoben oder Ordner umbenannt: der alte ETag gehört zu einer Datei an einem anderen Pfad.
+    // Apache und sabre/dav (Nextcloud) lehnen ein If-Match auf eine fehlende Datei mit 412 ab.
+    @Test fun `a note missing at its path is uploaded without If-Match`() = runTest {
+        givenPendingNote()
+        val ifMatch = slot<String?>()
+        val webdav = webdav {
+            // Ordner gelistet, Datei fehlt
+            every { put(any(), any(), any(), captureNullable(ifMatch)) } returns "\"server-v1\""
+        }
+
+        assertEquals(1, uploader().uploadAll(webdav, serverUrl).uploadedCount)
+        assertNull(ifMatch.captured)
+    }
+
+    @Test fun `a missing folder means a missing file, so no If-Match either`() = runTest {
+        givenPendingNote()
+        val ifMatch = slot<String?>()
+        val webdav = webdav {
+            every { listOrNull(any()) } returns null // 404: Ordner neu benannt, noch nicht oben
+            every { put(any(), any(), any(), captureNullable(ifMatch)) } returns "\"server-v1\""
+        }
+
+        assertEquals(1, uploader().uploadAll(webdav, serverUrl).uploadedCount)
+        assertNull(ifMatch.captured)
     }
 
     @Test fun `without a cached E-Tag no listing is fetched at all`() = runTest {

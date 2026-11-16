@@ -49,10 +49,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.TapAnchor
+import dev.dettmer.simplenotes.markdown.toSourceOffset
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import kotlin.math.roundToInt
 
@@ -108,6 +110,20 @@ internal fun Modifier.collapseUp(fraction: () -> Float): Modifier = clipToBounds
     val height = (placeable.height * (1f - f)).roundToInt()
     layout(placeable.width, height) {
         placeable.placeWithLayer(0, height - placeable.height) { alpha = 1f - f }
+    }
+}
+
+/**
+ * #180: Formatierleiste über der Tastatur. Schrumpft Bild für Bild mit [open] (1 = Tastatur offen) bis auf [rest],
+ * den Randabstand, der danach unter dem Text gilt; so springt der Text weder am Ende noch beim Öffnen. Ohne Clip,
+ * sonst fehlte der Schatten der schwebenden Leiste; was unten übersteht, liegt hinter der Tastatur.
+ */
+internal fun Modifier.shrinkWithKeyboard(rest: Dp, open: () -> Float): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val f = open()
+    val restPx = rest.roundToPx()
+    layout(placeable.width, (restPx + (placeable.height - restPx) * f).roundToInt()) {
+        placeable.placeWithLayer(0, 0) { alpha = f }
     }
 }
 
@@ -241,7 +257,7 @@ internal suspend fun applyTapAnchor(
 ) {
     val layout = awaitLayout()
     val contentY = anchor.contentY.coerceAtMost(layout.size.height.toFloat())
-    val offset = layout.getOffsetForPosition(Offset(anchor.x, contentY))
+    val offset = toSourceOffset(textFieldState.text, layout.getOffsetForPosition(Offset(anchor.x, contentY)))
     textFieldState.edit { selection = TextRange(offset) }
     scrollState.scrollTo((contentY - anchor.viewportY).toInt().coerceIn(0, scrollState.maxValue))
 }

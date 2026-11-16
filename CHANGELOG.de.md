@@ -8,6 +8,57 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.0] - 2026-11-16
+
+### ✨ Neue Funktionen
+
+**Unterpunkte in Checklisten** ([b9853ae](https://github.com/inventory69/simple-notes-sync/commit/b9853ae), [0d31150](https://github.com/inventory69/simple-notes-sync/commit/0d31150))
+- Checklisten-Einträge lassen sich eine Ebene einrücken. Ein Oberpunkt und seine Unterpunkte werden gemeinsam sortiert, gezogen und über die Trennlinie verschoben
+- Ein abgehakter Oberpunkt hakt seine Unterpunkte mit ab, ein wieder geöffneter Unterpunkt öffnet seinen Oberpunkt
+- Notizkarten, beide Widgets, der PDF-Export und das Teilen zeigen die Einrückung. Google-Keep-Importe behalten ihre Unterpunkte
+- Die Markdown-Dateien auf dem Server führen Unterpunkte vorerst ohne Einrückung, damit ältere App-Versionen sie behalten
+- Danke an [@ASFHU](https://github.com/ASFHU) für die Idee! ([#71](https://github.com/inventory69/simple-notes-sync/discussions/71))
+
+**Formatieren im Editor** ([3494365](https://github.com/inventory69/simple-notes-sync/commit/3494365), [f657f73](https://github.com/inventory69/simple-notes-sync/commit/f657f73), [48b595f](https://github.com/inventory69/simple-notes-sync/commit/48b595f))
+- Ein zweiter Tipp auf Fett, Kursiv, Durchgestrichen oder Code entfernt die Formatierung, statt ein weiteres Zeichenpaar einzufügen
+- Neues Design: Die schwebende Formatierleiste ist flacher und bewegt sich mit der Tastatur, wenn sie auf- oder zugeht
+- Neues Design: Ein Tipp, der in der Leseansicht nur eine Textauswahl aufhebt, startet nicht mehr das Bearbeiten
+- Neues Design: Ist der Wortzähler aus, verschwindet auch die Zeile „Bearbeitet“ im Editor
+- Danke an [@hgwebs4](https://github.com/hgwebs4) ([#179](https://github.com/inventory69/simple-notes-sync/issues/179), [#180](https://github.com/inventory69/simple-notes-sync/issues/180)) und [@Fs00](https://github.com/Fs00) ([#131](https://github.com/inventory69/simple-notes-sync/discussions/131)) für das Feedback!
+
+**Checklisten-Einträge hinzufügen (Beta)** ([b82c263](https://github.com/inventory69/simple-notes-sync/commit/b82c263), [016ca6d](https://github.com/inventory69/simple-notes-sync/commit/016ca6d))
+- Im neuen Design fügt ein runder Knopf unten Einträge hinzu, das Sortieren wandert ins Menü
+- Das Sync-Banner hat unter dem Suchfeld denselben Abstand wie die Karten
+
+### 🐛 Bug-Fixes
+
+**Notizen bleiben beim Speichern heil** ([d648553](https://github.com/inventory69/simple-notes-sync/commit/d648553), [52bf9ef](https://github.com/inventory69/simple-notes-sync/commit/52bf9ef), [99c8d05](https://github.com/inventory69/simple-notes-sync/commit/99c8d05))
+- Eine Notiz wird in einem Schritt geschrieben, ein voller Speicher oder ein Beenden der App während des Speicherns hinterlässt keine leere Notiz mehr
+- Schlägt das Speichern fehl, meldet der Editor das und versucht es beim nächsten Speichern erneut
+- Änderungen aus der Liste, dem Papierkorb und dem Widget gelten für den zuletzt gespeicherten Stand der Notiz
+
+**Sync behält jede Änderung** ([42e0e14](https://github.com/inventory69/simple-notes-sync/commit/42e0e14), [99c8d05](https://github.com/inventory69/simple-notes-sync/commit/99c8d05))
+- Eine Änderung, die gespeichert wird, während ein Sync dieselbe Notiz hochlädt, bleibt erhalten und geht mit dem nächsten Sync hoch
+- Bringt ein Sync eine neuere Fassung, während die Notiz offen ist, zeigt das nächste Speichern einen Konflikt, statt die Server-Fassung zu ersetzen
+
+**Verschieben auf Apache und Nextcloud** ([60921ae](https://github.com/inventory69/simple-notes-sync/commit/60921ae), [9f435c6](https://github.com/inventory69/simple-notes-sync/commit/9f435c6))
+- Beim Verschieben einer Notiz oder Umbenennen eines Ordners bleibt die Notiz auf Servern erhalten, die beim Hochladen die Version prüfen, etwa Apache und Nextcloud
+- Nach dem Rückgängigmachen einer Ordner-Löschung bleiben dessen Notizen an ihrem Platz und landen beim nächsten Sync nicht mehr im Papierkorb
+
+**Widgets** ([e2fd022](https://github.com/inventory69/simple-notes-sync/commit/e2fd022), [5208be6](https://github.com/inventory69/simple-notes-sync/commit/5208be6))
+- Zwei schnell abgehakte Einträge bleiben beide abgehakt
+- Sehr lange Notizen lassen die Widgets nicht mehr leer
+
+**Sehr lange Wörter** ([264d5d2](https://github.com/inventory69/simple-notes-sync/commit/264d5d2))
+- Ein eingefügtes sehr langes Wort ohne Leerzeichen, etwa ein Base64-Block, beendet die App nicht mehr, und Notizen mit so einem Wort öffnen normal
+
+**Einstellungen und Ordner** ([839eb61](https://github.com/inventory69/simple-notes-sync/commit/839eb61), [5a2f1ab](https://github.com/inventory69/simple-notes-sync/commit/5a2f1ab), [b82c263](https://github.com/inventory69/simple-notes-sync/commit/b82c263))
+- Ein schneller Doppeltipp auf Zurück in einem Einstellungs-Screen hinterlässt keinen leeren Screen mehr
+- Der Markdown-Bereich zeigt den Ordnerpfad, den der Sync wirklich nutzt
+- Lange Ordnertitel halten Abstand zur Notizzahl und zum Auswahlkästchen
+
+---
+
 ## [2.23.0] - 2026-11-14
 
 ### ✨ Neue Funktionen

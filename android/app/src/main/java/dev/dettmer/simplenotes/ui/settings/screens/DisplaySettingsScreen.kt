@@ -87,7 +87,7 @@ import dev.dettmer.simplenotes.utils.Constants
 fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     // Nur der Farbwähler-State lebt hier — er wird von Karte 3 *und* vom Sheet gebraucht,
     // das außerhalb des Scroll-Columns gerendert wird. Alles andere sammelt seine Sektion selbst.
-    val defaultNoteColor by viewModel.defaultNoteColor.collectAsState()
+    val defaultNoteColor by viewModel.editor.defaultNoteColor.collectAsState()
     var showDefaultColorPicker by remember { mutableStateOf(false) }
 
     SettingsScaffold(
@@ -121,7 +121,7 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     if (showDefaultColorPicker) {
         NoteColorPickerSheet(
             currentColor = defaultNoteColor,
-            onColorSelected = { hex -> viewModel.setDefaultNoteColor(hex) },
+            onColorSelected = { hex -> viewModel.editor.setDefaultNoteColor(hex) },
             onDismiss = { showDefaultColorPicker = false }
         )
     }
@@ -135,11 +135,11 @@ fun DisplaySettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 /** Karte 1: Theme, Farbschema, Schriftgröße, App-Titel. */
 @Composable
 private fun AppearanceSection(viewModel: SettingsViewModel) {
-    val themeMode by viewModel.themeMode.collectAsState()
-    val colorTheme by viewModel.colorTheme.collectAsState()
-    val fontSizeScale by viewModel.fontSizeScale.collectAsState()
-    val customAppTitle by viewModel.customAppTitle.collectAsState()
-    val newDesign by viewModel.newDesign.collectAsState()
+    val themeMode by viewModel.appearance.themeMode.collectAsState()
+    val colorTheme by viewModel.appearance.colorTheme.collectAsState()
+    val fontSizeScale by viewModel.appearance.fontSizeScale.collectAsState()
+    val customAppTitle by viewModel.appearance.customAppTitle.collectAsState()
+    val newDesign by viewModel.appearance.newDesign.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.theme_mode_title)) {
         // UI-Beta: Schalter bleibt nur bis zur Entscheidung, danach entfällt er wieder.
@@ -147,7 +147,7 @@ private fun AppearanceSection(viewModel: SettingsViewModel) {
             title = stringResource(R.string.settings_new_design_toggle),
             subtitle = stringResource(R.string.settings_new_design_description),
             checked = newDesign,
-            onCheckedChange = { viewModel.setNewDesign(it) },
+            onCheckedChange = { viewModel.appearance.setNewDesign(it) },
             icon = Icons.Default.AutoAwesome
         )
 
@@ -155,21 +155,21 @@ private fun AppearanceSection(viewModel: SettingsViewModel) {
 
         ThemeModeSelector(
             currentMode = themeMode,
-            onModeSelected = { viewModel.setThemeMode(it) }
+            onModeSelected = { viewModel.appearance.setThemeMode(it) }
         )
 
         SettingsSectionHeader(text = stringResource(R.string.theme_color_title))
 
         ColorThemeSelector(
             currentTheme = colorTheme,
-            onThemeSelected = { viewModel.setColorTheme(it) }
+            onThemeSelected = { viewModel.appearance.setColorTheme(it) }
         )
 
         SettingsSectionHeader(text = stringResource(R.string.font_size_title))
 
         FontSizeSelector(
             currentScale = fontSizeScale,
-            onScaleSelected = { viewModel.setFontSizeScale(it) }
+            onScaleSelected = { viewModel.appearance.setFontSizeScale(it) }
         )
 
         SettingsSectionHeader(text = stringResource(R.string.custom_app_title_section))
@@ -178,7 +178,7 @@ private fun AppearanceSection(viewModel: SettingsViewModel) {
             value = customAppTitle,
             onValueChange = { newValue ->
                 if (newValue.length <= Constants.MAX_CUSTOM_APP_TITLE_LENGTH) {
-                    viewModel.setCustomAppTitle(newValue)
+                    viewModel.appearance.setCustomAppTitle(newValue)
                 }
             },
             label = { Text(stringResource(R.string.custom_app_title_label)) },
@@ -211,20 +211,20 @@ private fun AppearanceSection(viewModel: SettingsViewModel) {
 /** Karte 2: Ansichtsmodus, Raster-Spalten, Vorschaulänge, Kartenelemente. */
 @Composable
 private fun NoteListSection(viewModel: SettingsViewModel) {
-    val displayMode by viewModel.displayMode.collectAsState()
-    val gridAdaptiveScaling by viewModel.gridAdaptiveScaling.collectAsState()
-    val gridManualColumns by viewModel.gridManualColumns.collectAsState()
-    val notePreviewLength by viewModel.notePreviewLength.collectAsState()
-    val showNoteTimestamp by viewModel.showNoteTimestamp.collectAsState()
-    val showNoteTypeIcon by viewModel.showNoteTypeIcon.collectAsState()
-    val hideCheckedInPreview by viewModel.hideCheckedInPreview.collectAsState()
+    val displayMode by viewModel.appearance.displayMode.collectAsState()
+    val gridAdaptiveScaling by viewModel.appearance.gridAdaptiveScaling.collectAsState()
+    val gridManualColumns by viewModel.appearance.gridManualColumns.collectAsState()
+    val notePreviewLength by viewModel.appearance.notePreviewLength.collectAsState()
+    val showNoteTimestamp by viewModel.appearance.showNoteTimestamp.collectAsState()
+    val showNoteTypeIcon by viewModel.appearance.showNoteTypeIcon.collectAsState()
+    val hideCheckedInPreview by viewModel.appearance.hideCheckedInPreview.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.settings_section_note_list)) {
         SettingsSectionHeader(text = stringResource(R.string.display_mode_title))
 
         DisplayModeSelector(
             currentMode = displayMode,
-            onModeSelected = { viewModel.setDisplayMode(it) }
+            onModeSelected = { viewModel.appearance.setDisplayMode(it) }
         )
 
         SettingsHint(text = stringResource(R.string.display_mode_info))
@@ -237,7 +237,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
                 title = stringResource(R.string.grid_adaptive_scaling_title),
                 subtitle = stringResource(R.string.grid_adaptive_scaling_subtitle),
                 checked = gridAdaptiveScaling,
-                onCheckedChange = { viewModel.setGridAdaptiveScaling(it) }
+                onCheckedChange = { viewModel.appearance.setGridAdaptiveScaling(it) }
             )
 
             AnimatedVisibility(visible = !gridAdaptiveScaling) {
@@ -246,7 +246,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
 
                     GridColumnSelector(
                         currentColumns = gridManualColumns,
-                        onColumnsSelected = { viewModel.setGridManualColumns(it) }
+                        onColumnsSelected = { viewModel.appearance.setGridManualColumns(it) }
                     )
                 }
             }
@@ -258,7 +258,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
 
         NotePreviewLengthSelector(
             currentLength = notePreviewLength,
-            onLengthSelected = { viewModel.setNotePreviewLength(it) }
+            onLengthSelected = { viewModel.appearance.setNotePreviewLength(it) }
         )
 
         SettingsHint(text = stringResource(R.string.note_preview_length_info))
@@ -268,7 +268,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
             title = stringResource(R.string.note_card_show_timestamp_toggle),
             subtitle = stringResource(R.string.note_card_show_timestamp_description),
             checked = showNoteTimestamp,
-            onCheckedChange = { viewModel.setShowNoteTimestamp(it) },
+            onCheckedChange = { viewModel.appearance.setShowNoteTimestamp(it) },
             icon = Icons.Default.Schedule
         )
 
@@ -276,7 +276,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
             title = stringResource(R.string.note_card_show_icon_toggle),
             subtitle = stringResource(R.string.note_card_show_icon_description),
             checked = showNoteTypeIcon,
-            onCheckedChange = { viewModel.setShowNoteTypeIcon(it) },
+            onCheckedChange = { viewModel.appearance.setShowNoteTypeIcon(it) },
             icon = Icons.AutoMirrored.Filled.Notes
         )
 
@@ -284,7 +284,7 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
             title = stringResource(R.string.note_card_hide_checked_toggle),
             subtitle = stringResource(R.string.note_card_hide_checked_description),
             checked = hideCheckedInPreview,
-            onCheckedChange = { viewModel.setHideCheckedInPreview(it) },
+            onCheckedChange = { viewModel.appearance.setHideCheckedInPreview(it) },
             icon = Icons.Default.Checklist
         )
     }
@@ -293,14 +293,14 @@ private fun NoteListSection(viewModel: SettingsViewModel) {
 /** UI-Beta: nur das neue Blatt kann ohne Titelfeld, im alten Design bleibt der Schalter verborgen. */
 @Composable
 private fun TitleFieldSwitch(viewModel: SettingsViewModel) {
-    val newDesign by viewModel.newDesign.collectAsState()
-    val titleFieldEnabled by viewModel.titleFieldEnabled.collectAsState()
+    val newDesign by viewModel.appearance.newDesign.collectAsState()
+    val titleFieldEnabled by viewModel.editor.titleFieldEnabled.collectAsState()
     if (!newDesign) return
     SettingsSwitch(
         title = stringResource(R.string.editor_title_field_toggle),
         subtitle = stringResource(R.string.editor_title_field_description),
         checked = titleFieldEnabled,
-        onCheckedChange = { viewModel.setTitleFieldEnabled(it) },
+        onCheckedChange = { viewModel.editor.setTitleFieldEnabled(it) },
         icon = Icons.Default.Title
     )
 }
@@ -308,20 +308,20 @@ private fun TitleFieldSwitch(viewModel: SettingsViewModel) {
 /** Karte 3: Editor-Verhalten + Standard-Notizfarbe. */
 @Composable
 private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String?, onDefaultColorClick: () -> Unit) {
-    val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
-    val defaultStartInPreviewMode by viewModel.defaultStartInPreviewMode.collectAsState()
-    val checklistStartInReadMode by viewModel.checklistStartInReadMode.collectAsState()
-    val newNoteFocusContent by viewModel.newNoteFocusContent.collectAsState()
-    val checklistScrollTopOnUncheck by viewModel.checklistScrollTopOnUncheck.collectAsState()
-    val wordCounterVisibility by viewModel.wordCounterVisibility.collectAsState()
-    val formattingBarEnabled by viewModel.formattingBarEnabled.collectAsState()
+    val autosaveEnabled by viewModel.editor.autosaveEnabled.collectAsState()
+    val defaultStartInPreviewMode by viewModel.editor.defaultStartInPreviewMode.collectAsState()
+    val checklistStartInReadMode by viewModel.editor.checklistStartInReadMode.collectAsState()
+    val newNoteFocusContent by viewModel.editor.newNoteFocusContent.collectAsState()
+    val checklistScrollTopOnUncheck by viewModel.editor.checklistScrollTopOnUncheck.collectAsState()
+    val wordCounterVisibility by viewModel.editor.wordCounterVisibility.collectAsState()
+    val formattingBarEnabled by viewModel.editor.formattingBarEnabled.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.autosave_section)) {
         SettingsSwitch(
             title = stringResource(R.string.autosave_toggle),
             subtitle = stringResource(R.string.autosave_description),
             checked = autosaveEnabled,
-            onCheckedChange = { viewModel.setAutosaveEnabled(it) },
+            onCheckedChange = { viewModel.editor.setAutosaveEnabled(it) },
             icon = Icons.Default.Save
         )
 
@@ -331,7 +331,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             title = stringResource(R.string.editor_default_preview_mode_toggle),
             subtitle = stringResource(R.string.editor_default_preview_mode_description),
             checked = defaultStartInPreviewMode,
-            onCheckedChange = { viewModel.setDefaultStartInPreviewMode(it) },
+            onCheckedChange = { viewModel.editor.setDefaultStartInPreviewMode(it) },
             icon = Icons.Default.Visibility
         )
 
@@ -340,7 +340,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             title = stringResource(R.string.editor_formatting_bar_toggle),
             subtitle = stringResource(R.string.editor_formatting_bar_description),
             checked = formattingBarEnabled,
-            onCheckedChange = { viewModel.setFormattingBarEnabled(it) },
+            onCheckedChange = { viewModel.editor.setFormattingBarEnabled(it) },
             icon = Icons.Default.TextFormat
         )
 
@@ -351,7 +351,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             title = stringResource(R.string.editor_checklist_read_mode_toggle),
             subtitle = stringResource(R.string.editor_checklist_read_mode_description),
             checked = checklistStartInReadMode,
-            onCheckedChange = { viewModel.setChecklistStartInReadMode(it) },
+            onCheckedChange = { viewModel.editor.setChecklistStartInReadMode(it) },
             icon = Icons.Default.TouchApp
         )
 
@@ -360,7 +360,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             title = stringResource(R.string.editor_new_note_focus_content_toggle),
             subtitle = stringResource(R.string.editor_new_note_focus_content_description),
             checked = newNoteFocusContent,
-            onCheckedChange = { viewModel.setNewNoteFocusContent(it) },
+            onCheckedChange = { viewModel.editor.setNewNoteFocusContent(it) },
             icon = Icons.Default.EditNote
         )
 
@@ -369,7 +369,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
             title = stringResource(R.string.checklist_scroll_top_on_uncheck_toggle),
             subtitle = stringResource(R.string.checklist_scroll_top_on_uncheck_description),
             checked = checklistScrollTopOnUncheck,
-            onCheckedChange = { viewModel.setChecklistScrollTopOnUncheck(it) },
+            onCheckedChange = { viewModel.editor.setChecklistScrollTopOnUncheck(it) },
             icon = Icons.Default.Checklist
         )
 
@@ -385,7 +385,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
                 RadioOption(WordCounterVisibility.OFF, stringResource(R.string.word_counter_off))
             ),
             selectedValue = wordCounterVisibility,
-            onValueSelected = { viewModel.setWordCounterVisibility(it) }
+            onValueSelected = { viewModel.editor.setWordCounterVisibility(it) }
         )
         SettingsHint(text = stringResource(R.string.word_counter_description))
 
@@ -400,7 +400,7 @@ private fun EditorSection(viewModel: SettingsViewModel, defaultNoteColor: String
 /** Karte 4: Kompressionsmodus für Bild-Anhänge. */
 @Composable
 private fun ImageCompressionSection(viewModel: SettingsViewModel) {
-    val imageCompressionMode by viewModel.imageCompressionMode.collectAsState()
+    val imageCompressionMode by viewModel.editor.imageCompressionMode.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.settings_image_compression_title)) {
         SettingsRadioGroup(
@@ -422,16 +422,16 @@ private fun ImageCompressionSection(viewModel: SettingsViewModel) {
                 )
             ),
             selectedValue = imageCompressionMode,
-            onValueSelected = { viewModel.setImageCompressionMode(it) }
+            onValueSelected = { viewModel.editor.setImageCompressionMode(it) }
         )
 
         SettingsHint(text = stringResource(R.string.settings_image_compression_info))
 
-        val defaultImageSizePercent by viewModel.defaultImageSizePercent.collectAsState()
+        val defaultImageSizePercent by viewModel.editor.defaultImageSizePercent.collectAsState()
         SettingsSectionHeader(text = stringResource(R.string.settings_default_image_size_title))
         DefaultImageSizeSelector(
             currentPercent = defaultImageSizePercent,
-            onPercentSelected = { viewModel.setDefaultImageSizePercent(it) }
+            onPercentSelected = { viewModel.editor.setDefaultImageSizePercent(it) }
         )
         SettingsHint(text = stringResource(R.string.settings_default_image_size_info))
     }

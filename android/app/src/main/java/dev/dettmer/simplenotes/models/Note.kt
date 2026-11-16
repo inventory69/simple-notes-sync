@@ -74,7 +74,7 @@ data class Note(
 
     /**
      * 🆕 v2.21.0: Hat sich der Inhalt geändert? Typabhängig wie `MarkdownSyncManager`: Bei Checklisten
-     * nur die Items (Text, Haken, Reihenfolge). Deren `content` ist gespeichert der Fallback-Text aus
+     * nur die Items (Text, Haken, Reihenfolge, Ebene). Deren `content` ist gespeichert der Fallback-Text aus
      * [toJson], im Editor `""`, ein Vergleich zählte also jedes Speichern als Inhalt.
      */
     fun contentDiffers(other: Note): Boolean {
@@ -84,7 +84,10 @@ data class Note(
         val theirs = other.checklistItems.orEmpty().sortedBy { it.order }
         return mine.size != theirs.size ||
             mine.zip(theirs).any { (a, b) ->
-                a.text != b.text || a.isChecked != b.isChecked || a.order != b.order
+                a.text != b.text ||
+                    a.isChecked != b.isChecked ||
+                    a.order != b.order ||
+                    a.indentationLevel != b.indentationLevel
             }
     }
 
@@ -129,7 +132,7 @@ data class Note(
     private fun generateChecklistFallbackContent(): String {
         return checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
             val checkbox = if (item.isChecked) "[x]" else "[ ]"
-            "$checkbox ${item.text}"
+            "${ChecklistNesting.TEXT_INDENT.repeat(item.indentationLevel)}$checkbox ${item.text}"
         }.orEmpty()
     }
 
@@ -198,6 +201,11 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 }
             }
             NoteType.CHECKLIST -> {
+                // Unterpunkte: bewusst OHNE Einzug. v2.23.0 und älter lesen eingerückte Zeilen nicht
+                // (`^[-*]\s+\[`) und erzwingen bei abweichendem Inhalt den MD-Import: die Unterpunkte
+                // wären danach auf allen Geräten gelöscht. Die Struktur steht in der JSON, der Import
+                // übernimmt sie bei flacher Datei (ChecklistNesting.withLevelsFrom). Leser ab v2.24.0
+                // verstehen Einzug, ein späteres Release kann ihn hier einschalten.
                 val checklistMarkdown = checklistItems?.sortedBy { it.order }?.joinToString("\n") { item ->
                     val checkbox = if (item.isChecked) "[x]" else "[ ]"
                     "- $checkbox ${item.text}"
@@ -418,15 +426,16 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
          * @return Liste von ChecklistItems oder leere Liste
          */
         private fun parseChecklistFromContent(content: String): List<ChecklistItem> {
-            val pattern = Regex("""^\s*\[([ xX])\]\s*(.+)$""", RegexOption.MULTILINE)
+            val pattern = Regex("""^([ \t]*)\[([ xX])\]\s*(.+)$""", RegexOption.MULTILINE)
             return pattern.findAll(content).mapIndexed { index, match ->
-                val checked = match.groupValues[1].lowercase() == "x"
-                val text = match.groupValues[2].trim()
+                val checked = match.groupValues[2].lowercase() == "x"
+                val text = match.groupValues[3].trim()
                 ChecklistItem(
                     id = UUID.randomUUID().toString(),
                     text = text,
                     isChecked = checked,
-                    order = index
+                    order = index,
+                    indentationLevel = ChecklistNesting.levelOfLine(match.groupValues[1])
                 )
             }.toList()
         }
@@ -553,15 +562,17 @@ type: ${noteType.name.lowercase()}$sortLine$importedLine$labelsLine$colorLine$pi
                 if (noteType == NoteType.CHECKLIST) {
                     // Parse Checklist Items
                     // 🆕 v1.10.0-P2: More lenient regex — supports `*` prefix and extra spaces
-                    val checklistRegex = Regex("""^[-*]\s+\[([ xX])\]\s+(.*)$""", RegexOption.MULTILINE)
+                    // Unterpunkte: führender Einzug (zwei Leerzeichen oder Tab) = Ebene 1
+                    val checklistRegex = Regex("""^([ \t]*)[-*]\s+\[([ xX])\]\s+(.*)$""", RegexOption.MULTILINE)
                     checklistItems = checklistRegex.findAll(effectiveContent).mapIndexed { index, matchResult ->
                         ChecklistItem(
                             id = UUID.randomUUID().toString(),
-                            text = matchResult.groupValues[2].trim(),
-                            isChecked = matchResult.groupValues[1].lowercase() == "x",
-                            order = index
+                            text = matchResult.groupValues[3].trim(),
+                            isChecked = matchResult.groupValues[2].lowercase() == "x",
+                            order = index,
+                            indentationLevel = ChecklistNesting.levelOfLine(matchResult.groupValues[1])
                         )
-                    }.toList().ifEmpty { null }
+                    }.toList().ifEmpty { null }?.let { ChecklistNesting.normalize(it) }
                     content = "" // Checklisten haben keinen "content"
                 } else {
                     content = MD_MIRROR_ASSET_REGEX.replace(effectiveContent, "](.assets/")
@@ -829,7 +840,8 @@ private fun JsonReader.nextChecklistItem(): ChecklistItem {
             "order" -> order = nextIntOrNull() ?: 0
             "originalOrder" -> originalOrder = nextIntOrNull() ?: 0
             "createdAt" -> createdAt = nextLongOrNull() ?: createdAt
-            "indentationLevel" -> indentationLevel = nextIntOrNull() ?: 0
+            // Fremde/handbearbeitete JSON: negative Werte ließen TEXT_INDENT.repeat werfen; 3 = Keep-Maximum
+            "indentationLevel" -> indentationLevel = (nextIntOrNull() ?: 0).coerceIn(0, ChecklistNesting.MAX_STORED_LEVEL)
             else -> skipValue()
         }
     }

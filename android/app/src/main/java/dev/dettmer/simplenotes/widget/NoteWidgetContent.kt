@@ -45,6 +45,7 @@ import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import dev.dettmer.simplenotes.R
 import dev.dettmer.simplenotes.markdown.stripInlineFormatting
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
@@ -486,7 +487,8 @@ private fun ChecklistCompactView(
     } ?: return
 
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
-    val uncheckedCount = items.count { !it.isChecked }
+    // Unterpunkte: Trenner nach den offenen Gruppen, abgehakte Unterpunkte offener Oberpunkte stehen darüber
+    val uncheckedCount = ChecklistNesting.openRowCount(items)
     val checkedCount = items.count { it.isChecked }
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
@@ -501,7 +503,7 @@ private fun ChecklistCompactView(
             sortOption == ChecklistSortOption.UNCHECKED_FIRST
         ) &&
         uncheckedCount > 0 &&
-        checkedCount > 0
+        uncheckedCount < items.size
 
     val visibleItems = items.take(maxItems)
     val remainingCount = items.size - visibleItems.size
@@ -511,8 +513,8 @@ private fun ChecklistCompactView(
         var separatorShown = false
         visibleItems.forEach { item ->
             // 🆕 v1.8.1: Separator vor dem ersten checked Item anzeigen
-            if (showSeparator && !separatorShown && item.isChecked) {
-                WidgetCheckedItemsSeparator(checkedCount = checkedCount, fontSizeScale = fontSizeScale)
+            if (showSeparator && !separatorShown && item.isChecked && item.indentationLevel == 0) {
+                WidgetCheckedItemsSeparator(checkedCount = items.size - uncheckedCount, fontSizeScale = fontSizeScale)
                 separatorShown = true
             }
 
@@ -520,7 +522,8 @@ private fun ChecklistCompactView(
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp), // 🆕 v1.8.2 (IMPL_08): 2dp → 4dp
+                        .padding(vertical = 4.dp) // 🆕 v1.8.2 (IMPL_08): 2dp → 4dp
+                        .widgetIndent(item.indentationLevel),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -569,6 +572,7 @@ private fun ChecklistCompactView(
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .padding(vertical = 3.dp) // 🆕 v1.8.2 (IMPL_08): 1dp → 3dp
+                        .widgetIndent(item.indentationLevel)
                 )
             }
         }
@@ -604,20 +608,19 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
     // in der RemoteViews-Transaktion (Issue #154).
     val maxItems = LocalWidgetItemCaps.current.checklistItems
     // 🆕 v1.8.1 (IMPL_04): Sortierung aus Editor übernehmen
-    val items = note.checklistItems?.let { rawItems ->
-        val sorted = sortChecklistItemsForPreview(rawItems, note.checklistSortOption)
-        if (sorted.size > maxItems) {
-            Logger.d(TAG, "Truncating checklist from ${sorted.size} to $maxItems items")
-            sorted.take(maxItems)
-        } else {
-            sorted
-        }
-    } ?: return
+    val sorted = note.checklistItems?.let { sortChecklistItemsForPreview(it, note.checklistSortOption) } ?: return
+    val items = if (sorted.size > maxItems) {
+        Logger.d(TAG, "Truncating checklist from ${sorted.size} to $maxItems items")
+        sorted.take(maxItems)
+    } else {
+        sorted
+    }
 
     // 🆕 v1.8.1 (IMPL_04): Separator-Logik
-    val uncheckedCount = items.count { !it.isChecked }
-    // Separator-Label zählt alle erledigten, auch die hinter dem Zeilenbudget abgeschnittenen
-    val checkedCount = note.checklistItems.orEmpty().count { it.isChecked }
+    // Unterpunkte: Trenner nach den offenen Gruppen (Position im abgeschnittenen Ausschnitt)
+    val uncheckedCount = ChecklistNesting.openRowCount(items)
+    // Separator-Label zählt alle Zeilen unter dem Trenner, auch die hinter dem Zeilenbudget abgeschnittenen
+    val checkedCount = sorted.size - ChecklistNesting.openRowCount(sorted)
     val sortOption = try {
         note.checklistSortOption?.let { ChecklistSortOption.valueOf(it) }
     } catch (e: IllegalArgumentException) {
@@ -631,7 +634,7 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
             sortOption == ChecklistSortOption.UNCHECKED_FIRST
         ) &&
         uncheckedCount > 0 &&
-        items.any { it.isChecked }
+        uncheckedCount < items.size
 
     // 🆕 v1.8.1: Berechne die Gesamtanzahl der Elemente inklusive Separator
     val totalItems = items.size + if (showSeparator) 1 else 0
@@ -657,7 +660,8 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp), // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
+                        .padding(vertical = 4.dp) // 🆕 v1.8.2 (IMPL_12): 2dp → 4dp
+                        .widgetIndent(item.indentationLevel),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -706,11 +710,25 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .padding(vertical = 3.dp) // 🆕 v1.8.2 (IMPL_12): 1dp → 3dp
+                        .widgetIndent(item.indentationLevel)
                 )
             }
         }
     }
 }
+
+/**
+ * Unterpunkte: Einzug je Ebene. Nur bei Ebene > 0 ein zusätzliches Modifier-Glied, damit flache
+ * Listen keine Bytes im Binder-Budget kosten (Issue #154).
+ *
+ * Nur hinter einem anderen `padding(...)` verwenden: Glance fasst alle Paddings zu einer Aktion
+ * zusammen, Ebene 0 schickt dann `start = 0` mit. Ohne Grund-Padding fehlte bei Ebene 0 jede
+ * Padding-Aktion, und eine wiederverwendete Zeile behielte den Einzug ihres Vorgängers.
+ */
+internal fun GlanceModifier.widgetIndent(level: Int): GlanceModifier =
+    if (level > 0) padding(start = (WIDGET_INDENT_DP * level).dp) else this
+
+private const val WIDGET_INDENT_DP = 20
 
 // ── Empty State ──
 

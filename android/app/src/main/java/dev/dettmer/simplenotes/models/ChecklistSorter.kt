@@ -20,41 +20,37 @@ object ChecklistSorter {
      * Returns a new list with [ChecklistItem.order] reassigned to 0-based sequential indices.
      */
     fun sort(items: List<ChecklistItem>, option: ChecklistSortOption): List<ChecklistItem> {
+        // Unterpunkte: sortiert werden Gruppen nach ihrem Oberpunkt, Unterpunkte bleiben in ihrer
+        // Gruppe in ihrer Reihenfolge (ChecklistNesting). Flache Listen = Gruppen der Größe 1.
+        val groups = ChecklistNesting.groups(ChecklistNesting.normalize(items))
+        val open = groups.filter { !it.first().isChecked }
+        val done = groups.filter { it.first().isChecked }
         val sorted = when (option) {
             ChecklistSortOption.MANUAL -> {
                 // v1.9.0 (F04): Sort by originalOrder to restore un-checked item's original position
-                val unchecked = items.filter { !it.isChecked }.sortedBy { it.originalOrder }
-                val checked = items.filter { it.isChecked }.sortedBy { it.originalOrder }
-                unchecked + checked
+                open.sortedBy { it.first().originalOrder } + done.sortedBy { it.first().originalOrder }
             }
             ChecklistSortOption.UNCHECKED_FIRST -> {
                 // Stable filter: keep current relative order within each group.
                 // After any previous sort the list is [unchecked 0..k, checked k+1..n], so:
                 //   check   → item was at p≤k, appears first in checked group (top after separator)
                 //   uncheck → item was at q>k, appears last in unchecked group (bottom before separator)
-                val unchecked = items.filter { !it.isChecked }
-                val checked = items.filter { it.isChecked }
-                unchecked + checked
+                open + done
             }
             ChecklistSortOption.CREATION_DATE -> {
                 // v1.11.0: Unchecked oldest-first, then checked oldest-first
-                val unchecked = items.filter { !it.isChecked }.sortedBy { it.createdAt }
-                val checked = items.filter { it.isChecked }.sortedBy { it.createdAt }
-                unchecked + checked
+                open.sortedBy { it.first().createdAt } + done.sortedBy { it.first().createdAt }
             }
             ChecklistSortOption.CREATION_DATE_DESC -> {
                 // v1.11.0: Unchecked newest-first, then checked newest-first
-                val unchecked = items.filter { !it.isChecked }.sortedByDescending { it.createdAt }
-                val checked = items.filter { it.isChecked }.sortedByDescending { it.createdAt }
-                unchecked + checked
+                open.sortedByDescending { it.first().createdAt } + done.sortedByDescending { it.first().createdAt }
             }
-            ChecklistSortOption.CHECKED_FIRST ->
-                items.sortedByDescending { it.isChecked }
+            ChecklistSortOption.CHECKED_FIRST -> done + open
             ChecklistSortOption.ALPHABETICAL_ASC ->
-                items.sortedBy { it.text.lowercase() }
+                groups.sortedBy { it.first().text.lowercase() }
             ChecklistSortOption.ALPHABETICAL_DESC ->
-                items.sortedByDescending { it.text.lowercase() }
+                groups.sortedByDescending { it.first().text.lowercase() }
         }
-        return sorted.mapIndexed { index, item -> item.copy(order = index) }
+        return sorted.flatten().mapIndexed { index, item -> item.copy(order = index) }
     }
 }

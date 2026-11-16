@@ -2,6 +2,7 @@ package dev.dettmer.simplenotes.sync
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.NoteType
 import dev.dettmer.simplenotes.models.SyncStatus
@@ -436,8 +437,6 @@ internal class MarkdownSyncManager(
                         Logger.w(TAG, "      ⚠️ Failed to parse ${resource.path} - fromMarkdown returned null")
                         continue
                     }
-                    // 🆕 v2.7.0 (Folders): Verzeichnis ist autoritativ für folderName.
-                    val mdNoteFoldered = mdNote.copy(folderName = mdItem.folder)
 
                     // FIX-05 (v2.2.0): Checklist-Import-Logging + Korruptions-Warnung
                     if (mdNote.noteType == NoteType.CHECKLIST) {
@@ -473,6 +472,10 @@ internal class MarkdownSyncManager(
 
                     // v1.4.0 FIX: Validierung - leere TEXT-Notizen nicht importieren wenn lokal Content existiert
                     val localNote = storage.loadNote(mdNote.id)
+                    // Unterpunkte: flache Datei übernimmt die Struktur der lokalen JSON (ChecklistNesting.withLevelsFrom)
+                    val mdChecklist = ChecklistNesting.withLevelsFrom(mdNote.checklistItems, localNote?.checklistItems)
+                    // 🆕 v2.7.0 (Folders): Verzeichnis ist autoritativ für folderName.
+                    val mdNoteFoldered = mdNote.copy(folderName = mdItem.folder, checklistItems = mdChecklist)
                     if (mdNote.noteType == NoteType.TEXT &&
                         mdNote.content.isBlank() &&
                         localNote != null &&
@@ -510,13 +513,17 @@ internal class MarkdownSyncManager(
                     )
 
                     // 🔧 v1.8.2 (IMPL_025): Semantischer Content-Vergleich
-                    val mdItems = mdNote.checklistItems.orEmpty()
-                    val localItems = localNote?.checklistItems.orEmpty()
+                    // Unterpunkte: die Ebene zählt mit, beide Seiten normalisiert (Keep-Ebenen, Invariante)
+                    val mdItems = mdChecklist.orEmpty()
+                    val localItems = ChecklistNesting.normalize(localNote?.checklistItems.orEmpty().sortedBy { it.order })
                     val checklistContentEqual = when {
                         mdItems.size != localItems.size -> false
                         mdItems.isEmpty() && localItems.isEmpty() -> true
                         else -> mdItems.zip(localItems).all { (md, local) ->
-                            md.text == local.text && md.isChecked == local.isChecked && md.order == local.order
+                            md.text == local.text &&
+                                md.isChecked == local.isChecked &&
+                                md.order == local.order &&
+                                md.indentationLevel == local.indentationLevel
                         }
                     }
 

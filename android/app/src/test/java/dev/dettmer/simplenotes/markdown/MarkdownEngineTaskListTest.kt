@@ -234,4 +234,13 @@ class MarkdownEngineTaskListTest {
         assertEquals("Some text", (blocks[0] as MarkdownEngine.MarkdownBlock.Paragraph).text)
         assertTrue(blocks[1] is MarkdownEngine.MarkdownBlock.TaskList)
     }
+
+    @Test
+    fun `indented task items keep their level in one block`() {
+        val md = "- [ ] Parent\n  - [x] Child\n\t- [ ] Tab child\n- [ ] Next"
+        val taskList = MarkdownEngine.parse(md).single() as MarkdownEngine.MarkdownBlock.TaskList
+
+        assertEquals(listOf(0, 1, 1, 0), taskList.items.map { it.level })
+        assertEquals("Child", taskList.items[1].text)
+    }
 }

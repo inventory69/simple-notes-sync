@@ -90,7 +90,7 @@ class ComposeMainActivity : FragmentActivity() {
                 result.data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID)
                     ?: return@registerForActivityResult
             // 🆕 v2.9.0 (Trash): Editor-Löschung → in den Papierkorb (mit Undo-Snackbar).
-            viewModel.moveToTrashFromEditor(noteId)
+            viewModel.trash.moveToTrashFromEditor(noteId)
         } else if (result.resultCode == ComposeNoteEditorActivity.RESULT_NOTE_ARCHIVE_TOGGLED) {
             val noteId =
                 result.data?.getStringExtra(ComposeNoteEditorActivity.RESULT_EXTRA_NOTE_ID)
@@ -286,18 +286,14 @@ class ComposeMainActivity : FragmentActivity() {
         // 🌟 v1.6.0: Refresh offline mode state FIRST (before any sync checks)
         // This ensures UI reflects current offline mode when returning from Settings
         viewModel.refreshOfflineModeState()
-        viewModel.refreshSyncStatus() // 🆕 v2.19.0
+        viewModel.sync.refreshSyncStatus() // 🆕 v2.19.0
 
-        // 🎨 v1.7.0: Refresh display mode when returning from Settings
-        viewModel.refreshDisplayMode()
-        viewModel.refreshCustomAppTitle() // 🆕 v1.9.0 (F05)
-        viewModel.refreshGridSettings() // 🆕 v2.1.0 (F46)
-        viewModel.refreshNotePreviewLength() // 🆕 v2.11.0
-        viewModel.refreshNoteCardDisplaySettings() // 🆕 Issue #100
+        // Anzeige-Einstellungen nach der Rückkehr aus den Settings neu lesen
+        viewModel.display.refresh()
 
         // Reload notes
         viewModel.loadNotes()
-        viewModel.refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Settings-Sync/Resume nachladen
+        viewModel.folders.refreshFolders() // 🆕 v2.7.0 (Folders): Ordner nach Settings-Sync/Resume nachladen
 
         // Phase 3: Track returning from in-app child activities
         // v2.0.0: Track whether we're returning from an in-app child activity
@@ -316,7 +312,7 @@ class ComposeMainActivity : FragmentActivity() {
 
         // Trigger Auto-Sync on app resume — but not when returning from editor/settings
         if (!returningFromChild) {
-            viewModel.triggerAutoSync(ActivityLog.Trigger.RESUME)
+            viewModel.sync.triggerAutoSync(ActivityLog.Trigger.RESUME)
         }
 
         // 🆕 v1.10.0-P2: Show one-time hint if last sync was stopped by quota/standby
@@ -363,16 +359,16 @@ class ComposeMainActivity : FragmentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 SyncStateManager.syncStatus.collect { status ->
-                    viewModel.updateSyncState(status)
+                    viewModel.sync.updateSyncState(status)
                 }
             }
         }
 
         // 🆕 v1.10.0: Auto-Hide via separatem Job — garantierte Mindest-Anzeigedauer
-        // Reads from viewModel.syncProgress (has min-phase-duration applied) so auto-hide
+        // Reads from viewModel.sync.syncProgress (has min-phase-duration applied) so auto-hide
         // timer is aligned with what the user actually sees in the banner.
         lifecycleScope.launch {
-            viewModel.syncProgress.collect { progress ->
+            viewModel.sync.syncProgress.collect { progress ->
                 when (progress.phase) {
                     dev.dettmer.simplenotes.sync.SyncPhase.COMPLETED,
                     dev.dettmer.simplenotes.sync.SyncPhase.WARNING,
@@ -490,10 +486,7 @@ class ComposeMainActivity : FragmentActivity() {
 
             withContext(Dispatchers.IO) {
                 for (note in checklistsToMigrate) {
-                    val updatedNote = note.copy(
-                        syncStatus = SyncStatus.PENDING
-                    )
-                    storage.saveNote(updatedNote)
+                    storage.updateNote(note.id) { it.copy(syncStatus = SyncStatus.PENDING) }
                     Logger.d(TAG, "   📝 Marked for re-sync: ${note.title}")
                 }
             }
@@ -519,7 +512,7 @@ class ComposeMainActivity : FragmentActivity() {
             val toMigrate = storage.loadAllNotes(forceReload = true)
                 .filter { it.syncStatus == SyncStatus.DELETED_ON_SERVER && it.trashedAt == null }
             for (note in toMigrate) {
-                storage.saveNote(note.copy(trashedAt = now))
+                storage.updateNote(note.id) { it.copy(trashedAt = now) }
             }
             if (toMigrate.isNotEmpty()) {
                 Logger.d(TAG, "🗑️ v2.9.0 Trash migration: moved ${toMigrate.size} DELETED_ON_SERVER note(s) to trash")

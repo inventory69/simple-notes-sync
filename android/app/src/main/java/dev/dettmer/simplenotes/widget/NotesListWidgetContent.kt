@@ -52,7 +52,7 @@ import dev.dettmer.simplenotes.ui.main.components.sortChecklistItemsForPreview
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 
 /** Vorschauzeilen bzw. Checklisten-Einträge pro Karte — 1 bei aktivem „Nur Titel" (Discussion #110). */
-private const val NOTE_CARD_BODY_MAX_LINES = 4
+internal const val NOTE_CARD_BODY_MAX_LINES = 4
 
 private const val BG_FALLBACK_DAY_COLOR = 0xFFF5F5F5L
 private const val BG_FALLBACK_NIGHT_COLOR = 0xFF1C1B1FL
@@ -480,6 +480,11 @@ private fun ChecklistCardPreview(
             val prefix = if (item.isChecked) "☑" else "☐"
             Text(
                 text = "$prefix ${stripInlineFormatting(item.text)}",
+                // Unterpunkte: Einzug als Padding (etwa eine Glyphbreite), nicht als Leerzeichen, sonst
+                // liefe die Durchstreichung erledigter Unterpunkte über den Einzug. Auch Ebene 0 bekommt
+                // das Padding: der Launcher wendet ein Update auf die vorhandenen Views an, und eine Zeile
+                // ohne Padding-Aktion behielte den Einzug des Unterpunkts, der vorher an ihrer Stelle stand.
+                modifier = GlanceModifier.padding(start = (LIST_PREVIEW_INDENT_SP * fontSizeScale * item.indentationLevel).dp),
                 style = TextStyle(
                     color = if (item.isChecked) GlanceTheme.colors.outline else GlanceTheme.colors.onSurface,
                     fontSize = (12 * fontSizeScale).sp,
@@ -616,3 +621,6 @@ private fun EmptyNotesState(modifier: GlanceModifier = GlanceModifier, fontSizeS
         )
     }
 }
+
+/** Einzug je Ebene in der Checklisten-Vorschau, gleich der Schriftgröße (eine Geviertbreite). */
+private const val LIST_PREVIEW_INDENT_SP = 12

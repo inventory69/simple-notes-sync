@@ -146,9 +146,6 @@ internal class NoteUploader(
         val semaphore = Semaphore(maxParallel)
         val completedCount = AtomicInteger(0)
 
-        // 🔒 v1.9.0: Mutex für thread-sichere storage.saveNote()-Aufrufe
-        val storageMutex = Mutex()
-
         // 🔒 v1.9.0 (Bug B): Mutex für thread-sicheren MD-Export
         // Verhindert Race Condition wenn 2+ Notizen denselben Titel haben:
         // Ohne Mutex: beide prüfen exists() → false → beide schreiben → Überschreibung
@@ -166,7 +163,6 @@ internal class NoteUploader(
                             note = note,
                             markdownExportEnabled = markdownExportEnabled,
                             markdownDirExists = markdownDirExists,
-                            storageMutex = storageMutex,
                             mdExportMutex = mdExportMutex,
                             mdFailed = mdFailed,
                             serverSnapshot = serverSnapshot // 🆕 v2.16.0
@@ -324,7 +320,7 @@ internal class NoteUploader(
      * 🆕 v1.9.0: Upload einer einzelnen Notiz für parallele Ausführung.
      *
      * Optimierungen:
-     * - Opt 3: Thread-sichere storage.saveNote() via Mutex
+     * - Opt 3: Status-Rückschreiben über setStatusUnlessChangedLocally (serialisiert im Storage)
      * - Opt 3: Retry mit Exponential Backoff
      * - Opt 5: Upload-Skip per Content-Hash
      * - Opt 6: MD-Upload-Skip per Content-Hash (in exportToMarkdown)
@@ -343,7 +339,6 @@ internal class NoteUploader(
         note: Note,
         markdownExportEnabled: Boolean,
         markdownDirExists: Boolean,
-        storageMutex: Mutex,
         mdExportMutex: Mutex,
         mdFailed: MutableMap<String, Exception>,
         serverSnapshot: ServerSnapshot
@@ -351,6 +346,8 @@ internal class NoteUploader(
         val maxRetries = 2
         val retryDelayMs = 500L
         var lastError: Throwable? = null
+        // Fassung, die dieser Upload zuletzt auf der Platte gesehen bzw. selbst geschrieben hat.
+        var onDisk = note
 
         repeat(maxRetries + 1) { attempt ->
             try {
@@ -361,7 +358,7 @@ internal class NoteUploader(
 
                 // Skip (Inhalt unverändert) und Konflikt (Server hat sich bewegt) werden beide
                 // entschieden, BEVOR irgendetwas geschrieben wird.
-                preflight(note, cachedETag, serverSnapshot, storageMutex)?.let { return it }
+                preflight(note, cachedETag, serverSnapshot)?.let { return it }
 
                 val noteToUpload = note.copy(syncStatus = SyncStatus.SYNCED)
                 val jsonBytes = noteToUpload.toJson().toByteArray()
@@ -371,20 +368,20 @@ internal class NoteUploader(
                 // 🆕 v2.16.0: Mit dem gecachten ETag als If-Match. Ohne die Precondition gewinnt,
                 // wer als Zweiter synct — der blinde PUT überschreibt die fremde Fassung, bevor
                 // der Download sie überhaupt zu sehen bekommt.
+                // Datei fehlt am Zielpfad (verschoben, Ordner umbenannt): den alten ETag als
+                // If-Match lehnen Apache und sabre/dav (Nextcloud) mit 412 ab.
+                val ifMatchETag = cachedETag.takeUnless { serverSnapshot.lacks(note) }
                 val putEtag = try {
-                    putWithPrecondition(webdav, noteUrl, jsonBytes, cachedETag)
+                    putWithPrecondition(webdav, noteUrl, jsonBytes, ifMatchETag)
                 } catch (e: WebDavException) {
                     // 412 heißt: auf dem Server steht eine Fassung, die diese Änderung nicht kennt.
                     // Kein Retry — der nächste Versuch bekäme dieselbe Antwort.
-                    if (e.statusCode == HTTP_PRECONDITION_FAILED) return markConflict(note, storageMutex)
+                    if (e.statusCode == HTTP_PRECONDITION_FAILED) return markConflict(note)
                     throw e
                 }
                 Logger.d(TAG, "      ✅ Upload successful")
 
-                // 🔒 Thread-sicherer Storage-Write via Mutex
-                storageMutex.withLock {
-                    storage.saveNote(noteToUpload)
-                }
+                onDisk = setStatusUnlessChangedLocally(onDisk, SyncStatus.SYNCED)
                 logUpload(noteToUpload)
 
                 val didExportMarkdown = if (markdownExportEnabled) {
@@ -416,9 +413,7 @@ internal class NoteUploader(
         Logger.e(TAG, "❌ Upload failed after ${maxRetries + 1} attempts: ${note.id}")
         healServerDirFlagIfMissing(lastError)
         try {
-            storageMutex.withLock {
-                storage.saveNote(note.copy(syncStatus = SyncStatus.PENDING))
-            }
+            setStatusUnlessChangedLocally(onDisk, SyncStatus.PENDING)
         } catch (e: Exception) {
             Logger.w(TAG, "Failed to mark note as PENDING: ${e.message}")
         }
@@ -435,8 +430,7 @@ internal class NoteUploader(
     private suspend fun preflight(
         note: Note,
         cachedETag: String?,
-        serverSnapshot: ServerSnapshot,
-        storageMutex: Mutex
+        serverSnapshot: ServerSnapshot
     ): UploadTaskResult? {
         val currentHash = computeContentHash(note)
         val cachedHash = prefs.getString("content_hash_${note.id}", null)
@@ -448,16 +442,14 @@ internal class NoteUploader(
             )
             // Status trotzdem auf SYNCED setzen (war evtl. fälschlich PENDING)
             if (note.syncStatus != SyncStatus.SYNCED) {
-                storageMutex.withLock {
-                    storage.saveNote(note.copy(syncStatus = SyncStatus.SYNCED))
-                }
+                setStatusUnlessChangedLocally(note, SyncStatus.SYNCED)
             }
             return UploadTaskResult.Skipped(noteId = note.id, reason = "Content unchanged (hash match)")
         }
 
         // 🆕 v2.16.0: Der eigentliche Konfliktschutz — vor dem ersten geschriebenen Byte.
         if (isStaleAgainstServer(note, cachedETag, serverSnapshot)) {
-            return markConflict(note, storageMutex, why = "server_etag_changed")
+            return markConflict(note, why = "server_etag_changed")
         }
         return null
     }
@@ -473,7 +465,10 @@ internal class NoteUploader(
     private data class ServerSnapshot(
         val etags: Map<String, String?> = emptyMap(),
         val listedFolders: Set<String?> = emptySet()
-    )
+    ) {
+        /** Sicher bekannt, dass die Datei der Notiz auf dem Server fehlt. */
+        fun lacks(note: Note) = note.folderName in listedFolders && note.id !in etags
+    }
 
     /**
      * 🆕 v2.16.0: Holt die aktuellen Server-ETags der Ordner, in denen etwas hochzuladen ist.
@@ -503,7 +498,8 @@ internal class NoteUploader(
         val listed = mutableSetOf<String?>()
         for (folder in foldersToCheck) {
             val resources = try {
-                webdav.listOrNull(urlBuilder.getNotesFolderUrl(serverUrl, folder))
+                // null = 404: Ordner fehlt (z. B. neu benannt), damit auch jede Datei darin.
+                webdav.listOrNull(urlBuilder.getNotesFolderUrl(serverUrl, folder)).orEmpty()
             } catch (e: Exception) {
                 Logger.w(TAG, "⚠️ Pre-upload listing failed for folder=$folder: ${e.message}")
                 null
@@ -611,16 +607,10 @@ internal class NoteUploader(
      * 🆕 v2.16.0: Die Server-Fassung ist neuer als die, auf der diese Änderung aufsetzt.
      * Lokale Fassung behalten und markieren — der Nutzer entscheidet (siehe Konflikt-Dialog).
      */
-    private suspend fun markConflict(
-        note: Note,
-        storageMutex: Mutex,
-        why: String = "if_match_412"
-    ): UploadTaskResult {
+    private suspend fun markConflict(note: Note, why: String = "if_match_412"): UploadTaskResult {
         Logger.w(TAG, "   ⚠️ Conflict on upload ($why): ${note.id} — server copy differs")
         if (note.syncStatus != SyncStatus.CONFLICT) {
-            storageMutex.withLock {
-                storage.saveNote(note.copy(syncStatus = SyncStatus.CONFLICT))
-            }
+            setStatusUnlessChangedLocally(note, SyncStatus.CONFLICT)
             ActivityLog.log(
                 ActivityLog.Op.CONFLICT,
                 ActivityLog.Src.LOCAL,
@@ -631,6 +621,25 @@ internal class NoteUploader(
             )
         }
         return UploadTaskResult.Conflict(note.id)
+    }
+
+    /**
+     * Setzt den Status nur, wenn auf der Platte noch die Fassung liegt, mit der dieser Upload
+     * gestartet ist ([snapshot]). Zwischen Schnappschuss und Rückschreiben liegen Requests: hat der
+     * Editor in der Zeit gespeichert, bliebe sonst der alte Schnappschuss stehen, die neuere Fassung
+     * wäre lokal weg und ginge als SYNCED auch nie hoch. Sie behält ihren eigenen Status und geht
+     * mit dem nächsten Sync hoch. Eine inzwischen gelöschte Notiz entsteht nicht wieder.
+     *
+     * @return die geschriebene Fassung, sonst unverändert [snapshot].
+     */
+    private suspend fun setStatusUnlessChangedLocally(snapshot: Note, status: SyncStatus): Note {
+        val written = storage.updateNote(snapshot.id) { onDisk ->
+            onDisk.copy(syncStatus = status).takeIf {
+                onDisk.updatedAt == snapshot.updatedAt && onDisk.syncStatus == snapshot.syncStatus
+            }
+        }
+        if (written == null) Logger.d(TAG, "   ⏭️ ${snapshot.id} changed locally meanwhile, keeping that version")
+        return written ?: snapshot
     }
 
     /**

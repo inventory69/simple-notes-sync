@@ -71,7 +71,8 @@ fun MarkdownToolbar(
         shadowElevation = if (floating) FLOATING_ELEVATION.dp else 0.dp,
         shape = if (floating) CircleShape else RectangleShape,
         modifier = modifier
-            .then(if (floating) Modifier.padding(vertical = Dimensions.SpacingMedium) else Modifier)
+            // #131: außen statt innen, die schwebende Leiste wird so flacher (56 statt 72 dp).
+            .padding(vertical = Dimensions.SpacingSmall)
             .fillMaxWidth()
     ) {
         Row(
@@ -80,22 +81,22 @@ fun MarkdownToolbar(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(vertical = 4.dp, horizontal = if (floating) Dimensions.SpacingMedium else 0.dp)
+                .padding(horizontal = if (floating) Dimensions.SpacingMedium else 0.dp)
         ) {
             ToolbarButton(
                 icon = Icons.Filled.FormatBold,
                 contentDescription = stringResource(R.string.md_toolbar_bold),
-                onClick = { wrapSelection(textFieldState, "**", "**") }
+                onClick = { toggleMarker(textFieldState, "**") }
             )
             ToolbarButton(
                 icon = Icons.Filled.FormatItalic,
                 contentDescription = stringResource(R.string.md_toolbar_italic),
-                onClick = { wrapSelection(textFieldState, "*", "*") }
+                onClick = { toggleMarker(textFieldState, "*") }
             )
             ToolbarButton(
                 icon = Icons.Filled.FormatStrikethrough,
                 contentDescription = stringResource(R.string.md_toolbar_strikethrough),
-                onClick = { wrapSelection(textFieldState, "~~", "~~") }
+                onClick = { toggleMarker(textFieldState, "~~") }
             )
             ToolbarButton(
                 icon = Icons.Filled.Title,
@@ -105,7 +106,7 @@ fun MarkdownToolbar(
             ToolbarButton(
                 icon = Icons.Filled.Code,
                 contentDescription = stringResource(R.string.md_toolbar_code),
-                onClick = { wrapSelection(textFieldState, "`", "`") }
+                onClick = { toggleMarker(textFieldState, "`") }
             )
             ToolbarButton(
                 icon = Icons.Filled.DataObject,
@@ -176,26 +177,30 @@ private fun ToolbarButton(icon: ImageVector, contentDescription: String, onClick
 }
 
 /**
- * Wraps the current selection with [prefix] and [suffix].
- * If nothing is selected, inserts `prefix + suffix` and places cursor between them.
+ * Wraps the current selection with [marker] (cursor between two markers if nothing is selected).
+ * #179: already wrapped, a second tap removes the markers instead of stacking them.
  */
-private fun wrapSelection(state: TextFieldState, prefix: String, suffix: String) {
+internal fun toggleMarker(state: TextFieldState, marker: String) {
     state.edit {
         val sel = selection
-        if (sel.collapsed) {
-            // No selection — insert prefix+suffix at cursor, place cursor between
-            insert(sel.start, "$prefix$suffix")
-            selection = TextRange(sel.start + prefix.length)
+        val text = toString()
+        // Läufe zählen statt vergleichen: in „**fett**“ ist das innere „*“ kein Kursiv. 3 = fett und kursiv.
+        val before = text.take(sel.min).takeLastWhile { it == marker[0] }.length
+        val after = text.drop(sel.max).takeWhile { it == marker[0] }.length
+        val run = minOf(before, after)
+        if (run == marker.length || (run == BOLD_ITALIC_RUN && marker[0] == '*')) {
+            delete(sel.max, sel.max + marker.length)
+            delete(sel.min - marker.length, sel.min)
+            selection = TextRange(sel.min - marker.length, sel.max - marker.length)
         } else {
-            val start = sel.min
-            val end = sel.max
-            val selectedText = toString().substring(start, end)
-            delete(start, end)
-            insert(start, "$prefix$selectedText$suffix")
-            selection = TextRange(start + prefix.length, start + prefix.length + selectedText.length)
+            insert(sel.max, marker)
+            insert(sel.min, marker)
+            selection = TextRange(sel.min + marker.length, sel.max + marker.length)
         }
     }
 }
+
+private const val BOLD_ITALIC_RUN = 3
 
 /**
  * Inserts `# ` at start of current line, cycling H1→H2→H3→remove.

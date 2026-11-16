@@ -54,6 +54,20 @@ class PdfExporterInstrumentedTest {
         assertTrue("Rendered page must contain visible (non-blank) content", firstPageHasContent(file))
     }
 
+    /** Ein 250 000 Zeichen langes Wort ohne Leerraum sprengte sonst den nativen Speicher. */
+    @Test fun textNoteWithHugeWord_generatesPdf() {
+        val file = PdfExporter.generatePdf(
+            context = context,
+            title = "Base64",
+            noteType = NoteType.TEXT,
+            textContent = "x".repeat(250_000),
+            checklistItems = emptyList()
+        )
+
+        assertNotNull("PDF generation must not fail", file)
+        assertTrue("Rendered page must contain visible (non-blank) content", firstPageHasContent(file!!))
+    }
+
     @Test fun textNoteWithFencedBlockAndInlineCode_generatesNonBlankPdf() {
         // Fenced block has a blank line in the middle — regression for the gappy-panel bug
         // where drawWrappedTextIndented early-returned on empty lines without painting

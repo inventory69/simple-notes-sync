@@ -36,29 +36,73 @@ class TrashManager(
     /**
      * Verschiebt [notes] in den Papierkorb. Setzt `trashedAt`/`updatedAt` und markiert PENDING,
      * außer die Notiz ist LOCAL_ONLY oder liegt in einem nur-lokalen Ordner — dann bleibt sie lokal.
+     * Notizen aus einem Ordner in [toRootFrom] landen dabei auf Root (gelöschter Ordner).
      *
-     * @return die unveränderten Originale als Undo-Payload.
+     * Von [notes] zählt nur die ID: geändert wird der Stand auf der Platte, nicht die übergebene
+     * Kopie, die aus einer älteren Liste stammen kann.
+     *
+     * @return die Fassungen von der Platte vor der Änderung, als Payload für [undoMoveToTrash].
      */
-    suspend fun moveToTrash(notes: List<Note>): List<Note> {
+    suspend fun moveToTrash(notes: List<Note>, toRootFrom: Set<String> = emptySet()): List<Note> {
         val now = clock()
-        notes.forEach { note ->
-            storage.saveNote(
+        return notes.mapNotNull { requested ->
+            var before: Note? = null
+            val trashed = storage.updateNote(requested.id) { note ->
+                before = note
+                val folder = note.folderName?.takeIf { it !in toRootFrom }
                 note.copy(
                     trashedAt = now,
                     updatedAt = now,
-                    syncStatus = targetStatusFor(note.syncStatus, note.folderName)
+                    folderName = folder,
+                    syncStatus = targetStatusFor(note.syncStatus, folder)
                 )
-            )
-            Logger.d(TAG, "🗑️ Moved to trash: ${note.id} ('${note.title}')")
+            } ?: return@mapNotNull null
+            Logger.d(TAG, "🗑️ Moved to trash: ${trashed.id} ('${trashed.title}')")
             ActivityLog.log(
                 ActivityLog.Op.TRASH,
                 ActivityLog.Src.LOCAL,
-                id = note.id,
-                title = note.title,
-                folder = note.folderName
+                id = trashed.id,
+                title = trashed.title,
+                folder = before?.folderName
             )
+            before
         }
-        return notes
+    }
+
+    /**
+     * Macht [moveToTrash] rückgängig: Papierkorb-Markierung, Ordner, `updatedAt` und Status kommen
+     * aus [originals] zurück, der Inhalt bleibt wie auf der Platte. Läuft innerhalb des
+     * Undo-Fensters, also bevor der Sync die Markierung hochgeladen hat.
+     */
+    suspend fun undoMoveToTrash(originals: List<Note>) {
+        originals.forEach { original ->
+            storage.updateNote(original.id) { note ->
+                note.copy(
+                    trashedAt = original.trashedAt,
+                    folderName = original.folderName,
+                    updatedAt = original.updatedAt,
+                    syncStatus = original.syncStatus
+                )
+            }
+        }
+    }
+
+    /**
+     * Nach dem Löschen eines Ordners: Notizen daraus liegen jetzt auf Root im Papierkorb, ihre
+     * Server-Kopie am alten Pfad muss weg. Sonst taucht der gelöschte Ordner über die
+     * zurückgebliebene Datei beim nächsten Sync wieder auf. [originals] sind die Fassungen vor
+     * [moveToTrash]; LOCAL_ONLY und nur-lokale Ordner hatten nie eine Server-Kopie.
+     */
+    suspend fun queueOldPathDeletions(originals: List<Note>, deletedFolders: Set<String>) {
+        val deletions = originals
+            .filter {
+                it.folderName != null &&
+                    it.folderName in deletedFolders &&
+                    it.syncStatus != SyncStatus.LOCAL_ONLY &&
+                    !folderStore.isLocalOnly(it.folderName)
+            }
+            .map { PendingServerDeletions.PendingDeletion(it.id, it.folderName) }
+        if (deletions.isNotEmpty()) pendingServerDeletions.add(deletions)
     }
 
     /**
@@ -67,25 +111,25 @@ class TrashManager(
      * Ordner nicht mehr (Abgleich gegen [knownFolders], case-insensitive), landet die Notiz in Root.
      */
     suspend fun restore(note: Note, knownFolders: List<String>) {
-        val resolvedFolder = note.folderName?.takeIf { folder ->
-            knownFolders.any { it.equals(folder, ignoreCase = true) }
-        }
         val now = clock()
-        storage.saveNote(
-            note.copy(
+        val restored = storage.updateNote(note.id) { current ->
+            val resolvedFolder = current.folderName?.takeIf { folder ->
+                knownFolders.any { it.equals(folder, ignoreCase = true) }
+            }
+            current.copy(
                 trashedAt = null,
                 folderName = resolvedFolder,
                 updatedAt = now,
-                syncStatus = restoreStatusFor(note.syncStatus, resolvedFolder)
+                syncStatus = targetStatusFor(current.syncStatus, resolvedFolder)
             )
-        )
-        Logger.d(TAG, "♻️ Restored from trash: ${note.id} → folder '$resolvedFolder'")
+        } ?: return
+        Logger.d(TAG, "♻️ Restored from trash: ${restored.id} → folder '${restored.folderName}'")
         ActivityLog.log(
             ActivityLog.Op.RESTORE,
             ActivityLog.Src.LOCAL,
-            id = note.id,
-            title = note.title,
-            folder = resolvedFolder
+            id = restored.id,
+            title = restored.title,
+            folder = restored.folderName
         )
     }
 
@@ -150,13 +194,6 @@ class TrashManager(
 
     private fun targetStatusFor(current: SyncStatus, folderName: String?): SyncStatus =
         if (current == SyncStatus.LOCAL_ONLY || folderStore.isLocalOnly(folderName)) {
-            SyncStatus.LOCAL_ONLY
-        } else {
-            SyncStatus.PENDING
-        }
-
-    private fun restoreStatusFor(current: SyncStatus, resolvedFolder: String?): SyncStatus =
-        if (current == SyncStatus.LOCAL_ONLY || folderStore.isLocalOnly(resolvedFolder)) {
             SyncStatus.LOCAL_ONLY
         } else {
             SyncStatus.PENDING

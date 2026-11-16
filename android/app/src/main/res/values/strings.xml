@@ -367,6 +367,7 @@
     <string name="delete_item">Delete item</string>
     <string name="note_is_empty">Note is empty</string>
     <string name="note_saved">Note saved</string>
+    <string name="note_save_failed">Could not save the note. Is the storage full?</string>
     <string name="note_deleted">Note deleted</string>
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->
@@ -1129,6 +1130,8 @@
     <string name="checklist_item_menu">Item options</string>
     <string name="checklist_copy_text">Copy text</string>
     <string name="checklist_duplicate_item">Duplicate item</string>
+    <string name="checklist_indent">Indent</string>
+    <string name="checklist_outdent">Outdent</string>
     <string name="checklist_copy_to_checklist">Copy to checklist</string>
     <string name="checklist_copy_to_checklist_title">Copy to Checklist</string>
     <string name="checklist_copy_to_checklist_empty">No other checklists available. Create another checklist first.</string>

@@ -62,6 +62,10 @@ class NoteContentUpdatedAtTest {
 
         val reordered = checklist.copy(checklistItems = listOf(items[1].copy(order = 0), items[0].copy(order = 1)))
         assertTrue(reordered.contentDiffers(checklist))
+
+        // Einrücken allein (Unterpunkt) ändert die Notiz, auch wenn Text und Haken gleich bleiben
+        val indented = checklist.copy(checklistItems = listOf(items[0], items[1].copy(indentationLevel = 1)))
+        assertTrue(indented.contentDiffers(checklist))
     }
 
     @Test fun `new note takes its own updatedAt`() {

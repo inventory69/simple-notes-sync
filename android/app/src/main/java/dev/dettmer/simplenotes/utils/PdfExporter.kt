@@ -12,6 +12,7 @@ import android.os.Build
 import android.text.Html
 import android.text.Layout
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -24,9 +25,11 @@ import androidx.core.graphics.withTranslation
 import dev.dettmer.simplenotes.images.applyExifOrientation
 import dev.dettmer.simplenotes.images.readExifOrientation
 import dev.dettmer.simplenotes.markdown.ImageAlign
+import dev.dettmer.simplenotes.markdown.LAYOUT_BREAK
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.ColumnAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine.MarkdownBlock
+import dev.dettmer.simplenotes.markdown.layoutBreakPositions
 import dev.dettmer.simplenotes.markdown.markdownInlineToHtml
 import dev.dettmer.simplenotes.markdown.parseImageAlt
 import dev.dettmer.simplenotes.markdown.stripInlineFormatting
@@ -328,7 +331,7 @@ object PdfExporter {
                 is MarkdownBlock.Paragraph -> renderParagraph(renderer, context, block.text)
 
                 is MarkdownBlock.TaskList -> {
-                    renderChecklistItems(renderer, block.items.map { it.text to it.isChecked })
+                    renderChecklistItems(renderer, block.items.map { Triple(it.text, it.isChecked, it.level) })
                 }
 
                 is MarkdownBlock.UnorderedList -> renderBulletList(renderer, block.items)
@@ -483,8 +486,10 @@ object PdfExporter {
         else -> heading3Paint
     }
 
-    private fun renderChecklistItems(renderer: PageRenderer, items: List<Pair<String, Boolean>>) {
-        for ((text, isChecked) in items) {
+    private fun renderChecklistItems(renderer: PageRenderer, items: List<Triple<String, Boolean, Int>>) {
+        for ((text, isChecked, level) in items) {
+            // Unterpunkte: die ganze Zeile samt Kästchen rückt um eine Kästchenbreite je Ebene ein
+            val shift = CHECKLIST_INDENT * level
             val symbol = if (isChecked) "☑ " else "☐ "
             val textPaint = if (isChecked) checkedItemPaint else uncheckedItemPaint
 
@@ -492,14 +497,14 @@ object PdfExporter {
             renderer.ensureSpace(CHECKLIST_FONT_SIZE * LINE_HEIGHT_MULTIPLIER)
 
             // Draw checkbox symbol at left margin
-            renderer.drawTextDirect(symbol, MARGIN_HORIZONTAL, checkboxPaint)
+            renderer.drawTextDirect(symbol, MARGIN_HORIZONTAL + shift, checkboxPaint)
 
             // Draw item text with wrapping and inline formatting (indented past checkbox)
-            val textWidth = TEXT_WIDTH - CHECKLIST_INDENT
+            val textWidth = TEXT_WIDTH - CHECKLIST_INDENT - shift
             renderer.drawWrappedTextIndented(
                 toSpanned(text, strikethrough = isChecked),
                 textPaint,
-                CHECKLIST_INDENT,
+                CHECKLIST_INDENT + shift,
                 textWidth
             )
         }
@@ -833,12 +838,19 @@ object PdfExporter {
             val x = MARGIN_HORIZONTAL + indent
             val width = maxWidth.toInt().coerceAtLeast(1)
             val lineHeight = paint.textSize * LINE_HEIGHT_MULTIPLIER
-            val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width).build()
+            // Lange Wörter: siehe LayoutBreaks.kt
+            val cuts = layoutBreakPositions(text)
+            val shown = if (cuts.isEmpty()) {
+                text
+            } else {
+                SpannableStringBuilder(text).apply { cuts.asReversed().forEach { insert(it, LAYOUT_BREAK.toString()) } }
+            }
+            val layout = StaticLayout.Builder.obtain(shown, 0, shown.length, paint, width).build()
 
             for (i in 0 until layout.lineCount) {
                 val lineStart = layout.getLineStart(i)
                 val lineEnd = layout.getLineEnd(i)
-                val lineText = text.subSequence(lineStart, lineEnd)
+                val lineText = shown.subSequence(lineStart, lineEnd)
 
                 ensureSpace(lineHeight)
 

@@ -55,30 +55,30 @@ fun SettingsMainScreen(
 ) {
     val context = LocalContext.current
     val appLockEnabled by viewModel.appLockEnabled.collectAsState()
-    val serverUrl by viewModel.serverUrl.collectAsState()
-    val syncFolderName by viewModel.syncFolderName.collectAsState()
-    val serverStatus by viewModel.serverStatus.collectAsState()
-    val syncInterval by viewModel.syncInterval.collectAsState()
-    val fileLoggingEnabled by viewModel.fileLoggingEnabled.collectAsState()
-    val developerOptionsUnlocked by viewModel.developerOptionsUnlocked.collectAsState() // 🔧 v1.11.0
+    val serverUrl by viewModel.server.serverUrl.collectAsState()
+    val syncFolderName by viewModel.server.syncFolderName.collectAsState()
+    val serverStatus by viewModel.connection.serverStatus.collectAsState()
+    val syncInterval by viewModel.sync.syncInterval.collectAsState()
+    val fileLoggingEnabled by viewModel.debug.fileLoggingEnabled.collectAsState()
+    val developerOptionsUnlocked by viewModel.debug.developerOptionsUnlocked.collectAsState() // 🔧 v1.11.0
 
-    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val isServerConfigured by viewModel.server.isServerConfigured.collectAsState()
 
     // 🌟 v1.6.0: Collect offline mode and trigger states
-    val offlineMode by viewModel.offlineMode.collectAsState()
-    val triggerOnSave by viewModel.triggerOnSave.collectAsState()
-    val triggerOnResume by viewModel.triggerOnResume.collectAsState()
-    val triggerWifiConnect by viewModel.triggerWifiConnect.collectAsState()
-    val triggerPeriodic by viewModel.triggerPeriodic.collectAsState()
-    val triggerBoot by viewModel.triggerBoot.collectAsState()
+    val offlineMode by viewModel.server.offlineMode.collectAsState()
+    val triggerOnSave by viewModel.sync.triggerOnSave.collectAsState()
+    val triggerOnResume by viewModel.sync.triggerOnResume.collectAsState()
+    val triggerWifiConnect by viewModel.sync.triggerWifiConnect.collectAsState()
+    val triggerPeriodic by viewModel.sync.triggerPeriodic.collectAsState()
+    val triggerBoot by viewModel.sync.triggerBoot.collectAsState()
 
     // 🆕 v1.12.0: Notification state for settings overview summary
-    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
-    val notificationsErrorsOnly by viewModel.notificationsErrorsOnly.collectAsState()
+    val notificationsEnabled by viewModel.sync.notificationsEnabled.collectAsState()
+    val notificationsErrorsOnly by viewModel.sync.notificationsErrorsOnly.collectAsState()
 
     // Check server status on first load
     LaunchedEffect(Unit) {
-        viewModel.checkServerStatus()
+        viewModel.connection.checkServerStatus()
     }
 
     // Get current language for display (no remember - always fresh value after activity recreate)
@@ -130,8 +130,8 @@ fun SettingsMainScreen(
 
             // 🎨 v1.7.0: Display Settings
             item {
-                val displayMode by viewModel.displayMode.collectAsState()
-                val autosaveEnabled by viewModel.autosaveEnabled.collectAsState()
+                val displayMode by viewModel.appearance.displayMode.collectAsState()
+                val autosaveEnabled by viewModel.editor.autosaveEnabled.collectAsState()
                 val displayModeLabel = when (displayMode) {
                     "grid" -> stringResource(R.string.display_mode_grid)
                     else -> stringResource(R.string.display_mode_list)

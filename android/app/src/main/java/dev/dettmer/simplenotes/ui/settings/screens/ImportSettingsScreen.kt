@@ -79,7 +79,7 @@ fun ImportSettingsScreen(
 ) {
     val scope = rememberCoroutineScope()
 
-    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val isServerConfigured by viewModel.server.isServerConfigured.collectAsState()
     val noFilesFoundText = stringResource(R.string.import_no_files_found)
 
     var isScanning by remember { mutableStateOf(false) }

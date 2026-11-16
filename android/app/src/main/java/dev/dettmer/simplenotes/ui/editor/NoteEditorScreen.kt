@@ -1,18 +1,12 @@
 package dev.dettmer.simplenotes.ui.editor
 
 import android.content.ClipData
-import android.content.Context
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -20,17 +14,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.content.TransferableContent
-import androidx.compose.foundation.content.contentReceiver
-import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,48 +27,21 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListLayoutInfo
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.delete
-import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.placeCursorAtEnd
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Title
-import androidx.compose.material.icons.outlined.Archive
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.PictureAsPdf
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -98,18 +57,15 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -118,416 +74,52 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.pointer.PointerEvent
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import dev.dettmer.simplenotes.BuildConfig
 import dev.dettmer.simplenotes.R
-import dev.dettmer.simplenotes.markdown.HtmlToMarkdown
-import dev.dettmer.simplenotes.markdown.ImageAlign
 import dev.dettmer.simplenotes.markdown.MarkdownEngine
 import dev.dettmer.simplenotes.markdown.MarkdownOutputTransformation
 import dev.dettmer.simplenotes.markdown.MarkdownPreview
 import dev.dettmer.simplenotes.markdown.TapAnchor
-import dev.dettmer.simplenotes.markdown.buildImageAlt
-import dev.dettmer.simplenotes.markdown.computeImageRewrite
-import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.NoteType
-import dev.dettmer.simplenotes.ui.editor.components.CheckedItemsSeparator
-import dev.dettmer.simplenotes.ui.editor.components.ChecklistItemRow
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistSortDialog
 import dev.dettmer.simplenotes.ui.editor.components.ChecklistTargetPickerDialog
 import dev.dettmer.simplenotes.ui.editor.components.EditorBarTitle
-import dev.dettmer.simplenotes.ui.editor.components.FramelessContentField
 import dev.dettmer.simplenotes.ui.editor.components.MarkdownToolbar
 import dev.dettmer.simplenotes.ui.editor.components.NoteMetaLine
 import dev.dettmer.simplenotes.ui.editor.components.NoteStatsPill
 import dev.dettmer.simplenotes.ui.editor.components.SaveStateButton
 import dev.dettmer.simplenotes.ui.editor.components.SheetTitleField
-import dev.dettmer.simplenotes.ui.editor.components.applyTapAnchor
+import dev.dettmer.simplenotes.ui.editor.components.WordCounterVisibility
 import dev.dettmer.simplenotes.ui.editor.components.collapseUp
 import dev.dettmer.simplenotes.ui.editor.components.noteColorGradient
 import dev.dettmer.simplenotes.ui.editor.components.rememberImeOpenFraction
+import dev.dettmer.simplenotes.ui.editor.components.shrinkWithKeyboard
 import dev.dettmer.simplenotes.ui.main.components.NoteColorPickerSheet
 import dev.dettmer.simplenotes.ui.theme.Dimensions
 import dev.dettmer.simplenotes.ui.theme.LocalFontSizeMultiplier
 import dev.dettmer.simplenotes.ui.theme.LocalNewDesign
 import dev.dettmer.simplenotes.ui.theme.NoteColorPalette
 import dev.dettmer.simplenotes.utils.AssetReferences
-import dev.dettmer.simplenotes.utils.Constants
-import dev.dettmer.simplenotes.utils.Logger
 import dev.dettmer.simplenotes.utils.NoteShareHelper
-import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-// 🆕 v2.12.0: Obergrenze Multi-Bild-Picker (Beta-Feedback: mehrere Bilder auf einmal)
-private const val MAX_PICKER_IMAGES = 10
-
-private const val LAYOUT_DELAY_MS = 100L
+internal const val LAYOUT_DELAY_MS = 100L
 
 // UI-Beta: Überblenden zwischen Lesen und Bearbeiten
 private const val MODE_CROSSFADE_MS = 180
 private const val IME_HIDE_TIMEOUT_MS = 600L
-private const val AUTO_SCROLL_DELAY_MS = 50L
-private const val ITEM_CORNER_RADIUS_DP = 8
-private const val DRAGGING_ITEM_Z_INDEX = 10f
-
-// 🆕 v2.5.0: Z-Index für Items in Check/Uncheck-Animation. Liegt zwischen 0f
-// (Standard-Items) und DRAGGING_ITEM_Z_INDEX (10f). Hebt das animierende Item
-// während der LazyColumn-Placement-Animation über seine Nachbarn — behebt die
-// Asymmetrie, dass aufwärts wandernde Items (Uncheck) sonst hinter Nachbarn
-// gezeichnet werden, weil ihre neue (niedrigere) Composition-Position sie früher
-// im Draw-Tree platziert. Drag dominiert weiterhin (10f > 5f).
-//
-private const val CHECKING_ITEM_Z_INDEX = 5f
-
-// 🆕 v2.5.0: Gesamt-Dauer der Check-Tap-Animation in Millisekunden. Deckt
-// Scale-Up (CHECK_ANIM_SCALE_UP_MS = 80ms) + Spring-Back + Glow-Fade-Out
-// (CHECK_GLOW_FADE_OUT_MS = 450ms) + LazyColumn-Placement-Spring komfortabel ab.
-// Wird vom LaunchedEffect in DraggableChecklistItem genutzt, um isCheckAnimating
-// zurückzusetzen (deterministischer Reset statt finishedListener-Race).
-private const val CHECK_ANIMATION_TOTAL_MS = 500L
-
-// 🔧 v2.5.x: Maximale Wartezeit, bis das initiale LazyColumn-Layout als „stabil"
-// gilt. Sicherheitsnetz für den Settle-LaunchedEffect in ChecklistEditor: falls externe
-// Effekte (Text-Messung, dynamische Höhen, Sync-Updates) die Liste länger als diese
-// Schwelle in Bewegung halten, wird das Placement-Animation-Gate trotzdem geöffnet,
-// damit Reorder-Animationen nach Check/Uncheck garantiert spielen.
-// 250 ms ≈ 15 Frames @ 60Hz — genug Puffer für Cold-Open auch auf langsamen
-// Geräten, kurz genug, dass User es nicht wahrnehmen.
-private const val INITIAL_LAYOUT_SETTLE_TIMEOUT_MS = 250L
-private val DRAGGING_ELEVATION_DP = 8.dp
-private const val CHECKBOX_TAP_PREFIX_COLS = 5
-
-// 🔧 v2.13.0: Dauer des Eigen-Collapse beim Uncheck mit Ziel außerhalb des Viewports.
-// Kurz genug, dass der Eintrag nicht „nachhängt", lang genug, dass das Nachrücken der
-// Nachbarn als Bewegung lesbar bleibt. Siehe [DraggableChecklistItem].
-private const val UNCHECK_COLLAPSE_MS = 250
-
-// Nachlauf zwischen Collapse-Ende und Commit: so lange braucht die animateItem-Spring der
-// Nachbarn, um die letzten Pixel aufzuholen. Ohne den Nachlauf schneidet der Commit sie ab.
-private const val UNCHECK_COMMIT_SETTLE_MS = 200L
-
-// Frames, die nach dem Snap eines Commit (Scroll-to-Top-Pfad, kein Expand) ohne animateItem
-// durchlaufen müssen: einer für den Commit-Layout-Pass selbst, einer als Puffer.
-private const val PLACEMENT_SUPPRESS_FRAMES = 2
-
-// Landet ein aufgehakter Eintrag auf einem Index bis hier, scrollt die Liste ganz an den
-// Anfang statt nur zum Eintrag: die paar Zeilen darüber blieben sonst knapp verdeckt.
-private const val SCROLL_TO_START_MAX_INDEX = 3
-
-// Dauer des Glide über die letzte Viewport-Höhe. FastOutSlowIn startet schnell und
-// maskiert damit den vorausgehenden Cut.
-private const val SCROLL_TOP_GLIDE_MS = 350
-
-/** Key des Separator-Slots in der LazyColumn — nie ein Item-Key. */
-private const val SEPARATOR_ITEM_KEY = "separator"
-
-// 🔍 v2.13.0 (nur DEBUG): Frame-Trace der Check/Uncheck-Placement-Animation.
-// Zweck: nachvollziehen, warum ein nach oben wandernder Eintrag am Viewport-Rand
-// „hängen bleibt", statt durchzulaufen. Filter: `adb logcat -s ChecklistAnim:D`.
-private const val CHECK_TRACE_TAG = "ChecklistAnim"
-
-// Feste Trace-Länge. Muss über CHECK_ANIMATION_TOTAL_MS (500 ms, zIndex-Reset) hinausgehen,
-// sonst endet der Trace vor dem Moment, in dem das Item „verschwindet".
-private const val CHECK_TRACE_DURATION_MS = 700L
-
-// Item-IDs sind UUIDs — die ersten Zeichen reichen zum Zuordnen im Log.
-private const val CHECK_TRACE_ID_LEN = 8
-private const val NANOS_PER_MS = 1_000_000L
-
-/** 🔍 DEBUG: Trace-Trigger. `tapNanos` macht jeden Tap eindeutig → LaunchedEffect startet neu. */
-private data class CheckTrace(val tapNanos: Long, val itemId: String, val checked: Boolean)
-
-/**
- * Verankert die LazyColumn **vor** dem Model-Reorder, damit LazyListItemAnimator seine
- * from/to-Koordinaten gegen einen stabilen Anker misst. `requestScrollToItem` läuft
- * synchron im nächsten Measure-Pass und löscht `LazyListState.lastKnownFirstItemKey` —
- * ohne das würde die key-basierte Re-Anchor-Logik dem getoggelten Item an seine neue
- * Position folgen und den Viewport mitziehen (→ Animation über ~0 sichtbares Delta).
- *
- * Zwei Viewport-Regime:
- *
- * **A) Viewport ganz oben** (`firstVisibleItemIndex == 0`): Index 0 an seiner exakten
- * Scroll-Position pinnen. Bewährter Pfad aus 7156c12. `requestScrollToItem(0, 0)` wäre
- * falsch: der Sprung um `firstVisibleItemScrollOffset` (92–175 px) landet im selben
- * Measure-Pass wie der Reorder, LazyListItemAnimator deutet das als Scroll statt Reorder
- * und überspringt die Placement-Animation komplett.
- *
- * **B1) Viewport weiter unten, getoggeltes Item ist das erste sichtbare**: Auf den Nachbarn
- * darunter pinnen, sonst folgt LazyLists Re-Anchoring dem Item.
- *
- * **B2) Viewport weiter unten, getoggeltes Item ist NICHT das erste sichtbare**: gar nicht
- * ankern. LazyList pinnt von sich aus das erste sichtbare Item an seinem Key fest — das ist
- * exakt das gewünschte Verhalten, und jeder `requestScrollToItem`-Aufruf mit einem Index
- * abseits von `firstVisibleItemIndex` lässt die Layout-Änderung für LazyListItemAnimator
- * wie einen Scroll aussehen → Placement-Animation entfällt komplett.
- *
- * Messung v2.13.0: Anker auf `first visible` (Index 8) → Animation lief, aber der Pin traf
- * nach dem Reorder ein anderes Item → Inhalt sprang um eine Item-Höhe. Anker auf ein Item
- * unterhalb (Index 13, pixelgenau korrekt) → Layout stimmte, dafür verschwand das Item ohne
- * jede Animation. Ohne Pre-Anchor entfällt beides.
- *
- * 🔧 v2.13.0: Nur noch für den **Check**-Pfad (Item wandert nach unten) und den seltenen
- * Uncheck ohne Separator-Reorder — der Uncheck mit Reorder läuft über den Collapse-Pfad
- * (siehe [onChecklistCheckedChange]) und braucht keinen Pre-Anchor mehr.
- */
-private fun preAnchorForToggle(
-    listState: LazyListState,
-    itemKey: String,
-    checked: Boolean
-) {
-    if (listState.firstVisibleItemIndex == 0) {
-        val preservedOffset = listState.firstVisibleItemScrollOffset
-        if (BuildConfig.DEBUG) logCheckTap(listState, itemKey, checked, "A(0,$preservedOffset)")
-        listState.requestScrollToItem(0, preservedOffset)
-        return
-    }
-    val visible = listState.layoutInfo.visibleItemsInfo
-    if (visible.firstOrNull()?.key != itemKey) {
-        if (BuildConfig.DEBUG) logCheckTap(listState, itemKey, checked, "B2(kein Pre-Anchor)")
-        return
-    }
-    val anchor = visible.firstOrNull { info -> info.key != itemKey }
-    if (BuildConfig.DEBUG) {
-        logCheckTap(listState, itemKey, checked, "B1(${anchor?.index},${anchor?.offset})")
-    }
-    if (anchor != null) {
-        listState.requestScrollToItem(anchor.index, -anchor.offset)
-    }
-}
-
-/**
- * 🔧 v2.13.0: Commit des aufgeschobenen Uncheck, nachdem die Row selbst auf Höhe 0 kollabiert ist.
- *
- * Vorher wird der Viewport neu verankert: Das Item verlässt seinen (jetzt 0 px hohen) Slot und
- * wird an seiner neuen Position in der unchecked-Sektion eingefügt — meist oberhalb des
- * Viewports. Ohne Anker würde LazyLists key-basiertes Re-Anchoring dem getoggelten Item folgen
- * und den Inhalt um eine Item-Höhe verschieben.
- *
- * Der Index wird **nicht** um die Reorder-Verschiebung korrigiert: `requestScrollToItem` greift
- * im Measure-Pass gegen den Indexraum von **vor** dem Reorder — gleiche Konvention wie B1 in
- * [preAnchorForToggle]. Ein `+1` verschob den Inhalt messbar um genau eine Zeile zu weit
- * (ChecklistUncheckAnimationInstrumentedTest, Teleport-Detektor).
- *
- * Dass `requestScrollToItem` Placement-Animationen für diesen Measure-Pass unterdrückt, ist hier
- * **erwünscht**: die Quelle ist 0 px hoch, und an einem sichtbaren Ziel wächst die Row selbst
- * wieder auf (Collapse-Gegenstück in [DraggableChecklistItem]) — der Animator hätte sonst wieder
- * einen Geist am Rand geparkt.
- *
- * 🔧 Issue #112: `reanchor = false` auf dem Scroll-to-Top-Pfad. Der Anker dient nur der
- * Viewport-Stabilität nach dem Commit — die Position wird hier aber im selben Atemzug per
- * Cut+Glide verlassen. Ein pending `requestScrollToItem` konnte dem bereits laufenden
- * `animateScrollToItem` dazwischenfunken (Viewport-Ruck zurück nach unten = sichtbare Stufe).
- */
-private fun commitDeferredUncheck(
-    listState: LazyListState,
-    toggledId: String,
-    commitChecked: (String, Boolean) -> Unit,
-    reanchor: Boolean = true
-) {
-    val visible = listState.layoutInfo.visibleItemsInfo
-    val anchor = if (reanchor && visible.firstOrNull()?.key == toggledId) {
-        visible.firstOrNull { it.key != toggledId && it.key != SEPARATOR_ITEM_KEY }
-    } else {
-        null
-    }
-    if (BuildConfig.DEBUG) {
-        Logger.d(
-            CHECK_TRACE_TAG,
-            "[COMMIT] id=${toggledId.take(CHECK_TRACE_ID_LEN)} anchor=${anchor?.let { "${it.index}@${it.offset}" } ?: "keiner (B2)"} " +
-                "first=${listState.firstVisibleItemIndex}@${listState.firstVisibleItemScrollOffset}"
-        )
-    }
-    if (anchor != null) {
-        listState.requestScrollToItem(anchor.index, -anchor.offset)
-    }
-    commitChecked(toggledId, false)
-}
-
-/**
- * 🔧 Issue #112: Scroll zu [index] als Cut + ein einziger pixelgenauer Glide.
- * `animateScrollToItem` schätzt lange Distanzen über Durchschnittshöhen und korrigiert
- * mehrphasig nach (Retargeting). Bei mehrzeiligen Einträgen las sich das als
- * „zweistufiges" Scrollen. Stattdessen instant auf `glidePx` unterhalb der Oberkante des
- * Ziels schneiden (der übersprungene Inhalt ist off-screen) und genau diese Strecke in einem
- * `animateScrollBy` gleiten.
- *
- * `glidePx` ist höchstens eine Viewport-Höhe und höchstens die Untergrenze der echten Strecke:
- * jeder Eintrag zwischen Ziel und Viewport ist mindestens so hoch wie der kleinste sichtbare,
- * der flachere Separator zählt mit 0. `scrollToItem` ist absolut: eine zu große Glide-Strecke
- * schnitte bei nahem Ziel erst sichtbar **nach unten**. Mit der Untergrenze geht der Schnitt nur
- * in Laufrichtung oder bleibt aus (bei einzeiligen Einträgen ist sie exakt: reiner Glide).
- *
- * @return true, wenn [itemKey] nach der Ankunft sichtbar ist — nur dann darf der
- * Highlight-Pop feuern; ein liegengebliebener Trigger feuerte sonst später beim
- * manuellen Scrollen.
- */
-private suspend fun cutAndGlideTo(
-    listState: LazyListState,
-    index: Int,
-    itemKey: String,
-    separatorIndex: Int
-): Boolean {
-    val info = listState.layoutInfo
-    val first = listState.firstVisibleItemIndex
-    val minRowPx = info.visibleItemsInfo
-        .filter { it.size > 0 && it.key != SEPARATOR_ITEM_KEY }
-        .minOfOrNull { it.size } ?: 0
-    val rowsBetween = first - index - if (separatorIndex in index until first) 1 else 0
-    val lowerBoundPx = rowsBetween * (minRowPx + info.mainAxisItemSpacing) + listState.firstVisibleItemScrollOffset
-    val glidePx = minOf(info.viewportEndOffset - info.viewportStartOffset, lowerBoundPx).coerceAtLeast(0)
-    if (BuildConfig.DEBUG) {
-        Logger.d(
-            CHECK_TRACE_TAG,
-            "[SCROLL] index=$index first=$first@${listState.firstVisibleItemScrollOffset} glide=$glidePx lowerBound=$lowerBoundPx"
-        )
-    }
-    listState.scrollToItem(index = index, scrollOffset = glidePx)
-    listState.animateScrollBy(
-        value = -glidePx.toFloat(),
-        animationSpec = tween(SCROLL_TOP_GLIDE_MS, easing = FastOutSlowInEasing)
-    )
-    return listState.layoutInfo.visibleItemsInfo.any { it.key == itemKey }
-}
-
-/**
- * 🔧 v2.13.0: Pfad-Weiche beim Checkbox-Tap. Drei Fälle:
- *
- * 1. **Re-Tap auf das gerade kollabierende Item** → Abbruch. Das Model wurde nie geändert,
- *    es genügt, den Pending-Slot zu leeren; die Row klappt wieder auf.
- * 2. **Uncheck mit Separator-Reorder** (`separatorVisualIndex >= 0`) → **immer** aufschieben:
- *    die Row besitzt die Exit-Animation selbst (Collapse an Ort und Stelle), Commit erst
- *    danach. Ein Aufwärts-Placement durch LazyLayoutItemAnimator findet nie statt — der ist
- *    für diese Richtung nachweislich nicht robust: Ziel off-screen parkt einen „Geist" am
- *    Viewport-Rand, und parallel zum Scroll entstehen Einschiebe-Artefakte bei den
- *    Nachbarn. Das frühere Kriterium „nur wenn Ziel off-screen" ließ genau diese Fälle durch.
- *    Ist Scroll-to-Top aktiv, feuert das ViewModel die Aktion erst beim Commit — der Scroll
- *    läuft also nach dem Collapse und kollidiert mit keiner Placement-Animation mehr.
- * 3. **Check — und Uncheck ohne Separator** (Sortierungen ohne Auto-Sort: das Item bewegt
- *    sich gar nicht; sowie die komplett abgehakte Liste) → unveränderter Pfad: Pre-Anchor +
- *    sofortiger Commit ins ViewModel.
- *
- * Der Pending-Slot hält genau ein Item. Ein zweiter Uncheck während eines laufenden Collapse
- * committet den ersten sofort — kein Tap darf verloren gehen.
- */
-@Suppress("LongParameterList") // Compose-State + Callbacks; ein Wrapper-Objekt brächte nichts
-private fun onChecklistCheckedChange(
-    listState: LazyListState,
-    itemId: String,
-    checked: Boolean,
-    separatorVisualIndex: Int,
-    pendingUncheckId: String?,
-    setPendingUncheckId: (String?) -> Unit,
-    commitChecked: (String, Boolean) -> Unit
-) {
-    if (checked && itemId == pendingUncheckId) {
-        setPendingUncheckId(null)
-        return
-    }
-    if (pendingUncheckId != null && pendingUncheckId != itemId) {
-        commitDeferredUncheck(listState, pendingUncheckId, commitChecked)
-    }
-    if (!checked && separatorVisualIndex >= 0) {
-        setPendingUncheckId(itemId)
-        return
-    }
-    setPendingUncheckId(null)
-    preAnchorForToggle(listState, itemId, checked)
-    commitChecked(itemId, checked)
-}
-
-/**
- * 🔍 DEBUG: Zustand **vor** dem Reorder (Layout ist zu diesem Zeitpunkt noch der alte —
- * `requestScrollToItem` greift erst im nächsten Measure-Pass).
- */
-private fun logCheckTap(
-    listState: LazyListState,
-    itemId: String,
-    checked: Boolean,
-    anchor: String
-) {
-    val info = listState.layoutInfo
-    val self = info.visibleItemsInfo.firstOrNull { it.key == itemId }
-    Logger.d(
-        CHECK_TRACE_TAG,
-        "[TAP] id=${itemId.take(CHECK_TRACE_ID_LEN)} checked=$checked anchor=$anchor " +
-            (self?.let { "idx=${it.index} top=${it.offset} h=${it.size}" } ?: "item=offscreen") +
-            " vp=[${info.viewportStartOffset},${info.viewportEndOffset}]" +
-            " first=${listState.firstVisibleItemIndex}/${listState.firstVisibleItemScrollOffset}" +
-            " visible=${info.visibleItemsInfo.size} total=${info.totalItemsCount}"
-    )
-    Logger.d(CHECK_TRACE_TAG, "[WIN-BEFORE] ${windowDump(info)}")
-}
-
-/** 🔍 DEBUG: `index:key@offset+höhe` aller platzierten Items — zeigt Index-Verschiebung und Überlappung. */
-private fun windowDump(info: LazyListLayoutInfo): String =
-    info.visibleItemsInfo.joinToString(" ") {
-        "${it.index}:${it.key.toString().take(CHECK_TRACE_ID_LEN)}@${it.offset}+${it.size}"
-    }
-
-/**
- * 🔍 DEBUG: Loggt [CHECK_TRACE_DURATION_MS] lang pro Frame die Position des getoggelten Items
- * relativ zum Viewport. Feste Länge statt Abbruch bei stabiler Position: der interessante
- * Moment (zIndex-Reset nach CHECK_ANIMATION_TOTAL_MS) liegt hinter der Ruhephase.
- *
- * `GONE` heißt: Item ist nicht mehr in `visibleItemsInfo` — sichtbar sein kann es trotzdem
- * noch, wenn der Item-Animator es über den Rand hinaus zeichnet.
- */
-private suspend fun traceCheckPlacement(listState: LazyListState, trace: CheckTrace) {
-    var lastOffset: Int? = null
-    var frame = 0
-    while (System.nanoTime() - trace.tapNanos < CHECK_TRACE_DURATION_MS * NANOS_PER_MS) {
-        withFrameNanos { it }
-        val info = listState.layoutInfo
-        val self = info.visibleItemsInfo.firstOrNull { it.key == trace.itemId }
-        lastOffset = self?.offset
-        Logger.d(
-            CHECK_TRACE_TAG,
-            "[F$frame] +${(System.nanoTime() - trace.tapNanos) / NANOS_PER_MS}ms " +
-                (self?.let { "idx=${it.index} top=${it.offset} bottom=${it.offset + it.size}" } ?: "GONE") +
-                " vp=[${info.viewportStartOffset},${info.viewportEndOffset}]" +
-                " win=[${info.visibleItemsInfo.firstOrNull()?.index}..${info.visibleItemsInfo.lastOrNull()?.index}]" +
-                " sep=${info.visibleItemsInfo.firstOrNull { it.key == "separator" }?.offset ?: "-"}" +
-                " first=${listState.firstVisibleItemIndex}/${listState.firstVisibleItemScrollOffset}" +
-                " scrolling=${listState.isScrollInProgress}"
-        )
-        // Fenster-Dump nur im ersten Frame — danach reicht die Kompaktzeile.
-        if (frame == 0) Logger.d(CHECK_TRACE_TAG, "[WIN-AFTER] ${windowDump(info)}")
-        frame++
-    }
-    Logger.d(
-        CHECK_TRACE_TAG,
-        "[END] id=${trace.itemId.take(CHECK_TRACE_ID_LEN)} checked=${trace.checked} frames=$frame finalTop=$lastOffset"
-    )
-    Logger.d(CHECK_TRACE_TAG, "[WIN-END] ${windowDump(listState.layoutInfo)}")
-}
 
 /**
  * Main Composable for the Note Editor screen.
@@ -812,6 +404,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = if (newDesign) Color.Transparent else surfaceColor,
+        // contentColorFor(Transparent) fällt auf Schwarz zurück; Icons ohne tint wären im dunklen Theme unsichtbar.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = {
@@ -945,243 +539,30 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 contentDescription = stringResource(R.string.share_overflow_menu)
                             )
                         }
-                        DropdownMenu(
+                        EditorOverflowMenu(
                             expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false },
-                            shape = MaterialTheme.shapes.large, // 🆕 v1.10.0-P2: Rounded corners
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, // 🆕 v1.10.0-P2
-                            shadowElevation = 6.dp, // 🆕 v1.10.0-P2
-                            tonalElevation = 2.dp // 🆕 v1.10.0-P2
-                        ) {
-                            // v2.0.1: Undo/Redo in overflow only for compact displays (Issue #48)
-                            if (isCompactToolbar) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.editor_undo)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.Undo,
-                                            contentDescription = null,
-                                            tint = if (canUndo) {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                                            }
-                                        )
-                                    },
-                                    enabled = canUndo,
-                                    onClick = {
-                                        viewModel.undo()
-                                        // Don't dismiss — user may want to undo multiple times
-                                    }
+                            onDismiss = { showOverflowMenu = false },
+                            viewModel = viewModel,
+                            uiState = uiState,
+                            flags = EditorMenuFlags(
+                                compactToolbar = isCompactToolbar,
+                                canUndo = canUndo,
+                                canRedo = canRedo,
+                                isPreviewMode = isPreviewMode,
+                                isAttachingImage = isAttachingImage,
+                                newDesign = newDesign,
+                                showSheetTitle = showSheetTitle
+                            )
+                        ) { action ->
+                            when (action) {
+                                EditorMenuAction.PICK_IMAGE -> imagePickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.editor_redo)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.Redo,
-                                            contentDescription = null,
-                                            tint = if (canRedo) {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                                            }
-                                        )
-                                    },
-                                    enabled = canRedo,
-                                    onClick = {
-                                        viewModel.redo()
-                                        // Don't dismiss — user may want to redo multiple times
-                                    }
-                                )
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
+                                EditorMenuAction.SORT -> showChecklistSortDialog = true
+                                EditorMenuAction.ADD_TITLE -> focusTitleOnShow = true
+                                EditorMenuAction.COLOR -> showColorPicker = true
+                                EditorMenuAction.CONVERT -> showConvertDialog = true
                             }
-                            // Formatierleiste aus (E11): Bild einfügen bleibt hier erreichbar, nur beim Bearbeiten,
-                            // weil die Brücke Feld → ViewModel im Lesemodus nicht läuft.
-                            if (uiState.noteType == NoteType.TEXT && !isPreviewMode && !uiState.formattingBarEnabled) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.md_toolbar_image)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Filled.AddPhotoAlternate,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    enabled = !isAttachingImage,
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        imagePickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                    }
-                                )
-                            }
-                            if (newDesign && !showSheetTitle) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.editor_add_title)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Filled.Title,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        focusTitleOnShow = true
-                                    }
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_set_note_color)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.Palette,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    showColorPicker = true
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        stringResource(
-                                            if (uiState.noteType == NoteType.CHECKLIST) {
-                                                R.string.action_convert_to_note
-                                            } else {
-                                                R.string.action_convert_to_checklist
-                                            }
-                                        )
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        if (uiState.noteType == NoteType.CHECKLIST) {
-                                            Icons.AutoMirrored.Outlined.Notes
-                                        } else {
-                                            Icons.Outlined.Checklist
-                                        },
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    showConvertDialog = true
-                                }
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.share_to_calendar)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.CalendarMonth,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    viewModel.openInCalendar()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_copy_note_text)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.ContentCopy,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    viewModel.copyNoteText()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.share_as_text)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.Share,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    viewModel.shareAsText()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.share_as_pdf)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Outlined.PictureAsPdf,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    viewModel.shareAsPdf()
-                                }
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        stringResource(
-                                            if (uiState.isArchived) R.string.action_unarchive else R.string.action_archive
-                                        )
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        if (uiState.isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    // 🆕 v2.11.0 (Archive): speichert + schließt den Editor (via Event/Activity)
-                                    viewModel.toggleArchive()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = stringResource(R.string.delete),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    // 🆕 v2.9.0 (Trash): direkt in den Papierkorb, kein Bestätigungs-Dialog.
-                                    viewModel.deleteNote()
-                                }
-                            )
                         }
                     } // Box
                 },
@@ -1300,7 +681,8 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         }
                         // E4 / C3: Änderungsdatum und Wortzahl bzw. offen/erledigt statt Pille.
                         NoteMetaLine(
-                            editedAt = lastEditedAt,
+                            // #180: Wortzähler „Aus“ nimmt die ganze Zeile weg, das Datum steht auch auf der Karte.
+                            editedAt = lastEditedAt.takeIf { uiState.wordCounterVisibility != WordCounterVisibility.OFF },
                             text = uiState.content,
                             mode = noteStatsMode,
                             showStats = noteStatsVisible,
@@ -1433,6 +815,12 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                         if (showFormattingBar) {
                             MarkdownToolbar(
                                 floating = newDesign, // E6: abgerundeter, schwebender Balken
+                                // #180: geht mit der Tastatur; verschwände sie erst am Ende, spränge der Text.
+                                modifier = if (newDesign && !hasHardwareKeyboard) {
+                                    Modifier.shrinkWithKeyboard(Dimensions.SpacingLarge) { imeOpen.value }
+                                } else {
+                                    Modifier
+                                },
                                 textFieldState = textFieldState,
                                 onImageClick = {
                                     imagePickerLauncher.launch(
@@ -1489,6 +877,10 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                                 focusNewItemId = newId
                             },
                             onMove = { from, to -> viewModel.moveChecklistItem(from, to) },
+                            onIndent = { id -> viewModel.indentChecklistItem(id) },
+                            onOutdent = { id -> viewModel.outdentChecklistItem(id) },
+                            onDragStarted = { id -> viewModel.startChecklistDrag(id) },
+                            onDragFinished = { viewModel.onChecklistDragFinished() },
                             onFocusHandled = { focusNewItemId = null },
                             onSortClick = { showChecklistSortDialog = true }, // 🔀 v1.8.0
                             readOnly = isPreviewMode, // 🆕 Issue #156
@@ -1581,977 +973,5 @@ fun NoteEditorScreen(viewModel: NoteEditorViewModel, onNavigateBack: () -> Unit)
                 copyToChecklistItemId = null
             }
         )
-    }
-}
-
-/**
- * 🆕 Bild-Attachments: Photo-Picker-Launcher — ausgelagert, damit die Verzweigung
- * (uri null-check, attachImage-Ergebnis) nicht in NoteEditorScreens Cyclomatic Complexity zählt.
- */
-@Composable
-private fun rememberImagePickerLauncher(
-    viewModel: NoteEditorViewModel,
-    textFieldState: TextFieldState,
-    scope: CoroutineScope
-) = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = MAX_PICKER_IMAGES)
-) { uris ->
-    if (uris.isNotEmpty()) {
-        scope.launch { attachAndInsertImages(viewModel, textFieldState, uris) }
-    }
-}
-
-/**
- * 🆕 v2.12.0: Hängt [uris] sequenziell als Assets an (Kompression + Store via
- * attachImage) und fügt je ein `![](.assets/…)` auf eigener Zeile ein.
- * Gemeinsamer Pfad für Multi-Picker und Clipboard-Bild-Paste.
- */
-private suspend fun attachAndInsertImages(
-    viewModel: NoteEditorViewModel,
-    textFieldState: TextFieldState,
-    uris: List<Uri>
-) {
-    uris.forEach { uri ->
-        viewModel.attachImage(uri)?.let { assetName ->
-            insertImageMarkdownOnOwnLine(textFieldState, assetName, viewModel.defaultImageSizePercent)
-        }
-    }
-}
-
-/**
- * Fügt `![|sizePercent](.assets/…)` mit führendem Umbruch ein, wenn der Cursor nicht am
- * Zeilenanfang steht — bei mehreren Bildern landet so jeder Link auf einer eigenen Zeile
- * (Renderer erwartet Bild-Links als eigene Zeile).
- */
-private fun insertImageMarkdownOnOwnLine(state: TextFieldState, assetName: String, sizePercent: Int) {
-    state.edit {
-        val start = selection.min
-        val atLineStart = start == 0 || asCharSequence()[start - 1] == '\n'
-        val alt = buildImageAlt("", sizePercent, ImageAlign.CENTER)
-        val link = (if (atLineStart) "" else "\n") + "![$alt](.assets/$assetName)"
-        insert(start, link)
-        selection = TextRange(start + link.length)
-    }
-}
-
-/**
- * 🆕 Bild-Attachments v2: Schreibt eine Größe/Ausrichtung-Auswahl aus dem Long-Press-Menü
- * zurück in die Markdown-Source. [computeImageRewrite] liefert `null` bei Asset-Mismatch/
- * Out-of-range-Ordinal (Text hat sich geändert) — dann ist es ein stiller No-op.
- */
-private fun applyImageTokenRewrite(
-    textFieldState: TextFieldState,
-    viewModel: NoteEditorViewModel,
-    image: MarkdownEngine.MarkdownBlock.Image,
-    sizePercent: Int,
-    align: ImageAlign,
-    altText: String
-) {
-    val rewrite = computeImageRewrite(
-        textFieldState.text.toString(),
-        image.ordinal,
-        image.assetName,
-        sizePercent,
-        align,
-        cleanAlt = altText
-    ) ?: return
-    val (range, replacement) = rewrite
-    textFieldState.edit { replace(range.first, range.last + 1, replacement) }
-    viewModel.updateContent(textFieldState.text.toString())
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun TextNoteContent(
-    textFieldState: TextFieldState,
-    onContentChange: (String) -> Unit,
-    focusRequester: FocusRequester,
-    outputTransformation: MarkdownOutputTransformation,
-    onPasteImages: (List<Uri>) -> Unit, // 🆕 v2.12.0
-    modifier: Modifier = Modifier,
-    onFocusChanged: (Boolean) -> Unit = {},
-    tapAnchor: TapAnchor? = null, // UI-Beta (E10): Tippstelle aus dem Lesemodus
-    onTapAnchorApplied: () -> Unit = {}
-) {
-    // 🆕 v1.8.2 (IMPL_07): Migration zu TextFieldState-API für scrollState-Unterstützung
-    // v1.9.0 (F07): TextFieldState now provided from parent for toolbar access
-    // UI-Beta (E2): im neuen Design ohne Rahmen, Text an derselben Stelle wie im Lesemodus
-    val frameless = LocalNewDesign.current
-    val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope() // 🆕 v2.12.0: async HTML-Konvertierung
-
-    // Focus-State tracken für Auto-Scroll bei Tastaturöffnung
-    var isFocused by remember { mutableStateOf(false) }
-
-    // Layout-Result für Tap-to-Toggle (Task-Checkboxes)
-    val textLayoutRef = remember { mutableStateOf<TextLayoutResult?>(null) }
-
-    // Text-Änderungen an ViewModel propagieren
-    LaunchedEffect(textFieldState) {
-        snapshotFlow { textFieldState.text.toString() }
-            .drop(1) // 🆕 v1.9.0: skip initial emission — snapshotFlow always emits current
-            // value on first collect, but that's hydration, not a user edit
-            .collect { newText ->
-                onContentChange(newText)
-            }
-    }
-
-    // E10: Cursor und Scroll an die Stelle, die im Lesemodus angetippt wurde.
-    var anchored by remember { mutableStateOf(false) }
-    LaunchedEffect(tapAnchor) {
-        val anchor = tapAnchor ?: return@LaunchedEffect
-        applyTapAnchor(anchor, textFieldState, scrollState) { snapshotFlow { textLayoutRef.value }.filterNotNull().first() }
-        anchored = true
-        onTapAnchorApplied()
-    }
-
-    // 🆕 v1.8.2 (IMPL_07): Auto-Scroll zum Ende wenn Fokus erhalten (Tastatur öffnet sich)
-    // Delay gibt dem Layout Zeit, sich nach imePadding-Resize zu stabilisieren
-    LaunchedEffect(isFocused) {
-        if (isFocused && !anchored && tapAnchor == null) {
-            delay(LAYOUT_DELAY_MS)
-            scrollState.animateScrollTo(scrollState.maxValue)
-        }
-    }
-
-    val context = LocalContext.current
-
-    val fieldModifier = modifier
-        .focusRequester(focusRequester)
-        .onFocusChanged { focusState ->
-            isFocused = focusState.isFocused
-            onFocusChanged(focusState.isFocused)
-        }
-        .contentReceiver { transferable ->
-            handlePastedContent(transferable, context, textFieldState, scope, onPasteImages)
-        }
-    val checkboxTapModifier = Modifier.pointerInput(textFieldState) {
-        awaitPointerEventScope {
-            while (true) {
-                toggleTaskCheckbox(
-                    awaitPointerEvent(PointerEventPass.Initial),
-                    textLayoutRef.value,
-                    textFieldState,
-                    scrollOffsetY = if (frameless) scrollState.value else 0
-                )
-            }
-        }
-    }
-    // 🆕 v1.8.2: Auto-Großschreibung für Satzanfänge im Inhalt
-    val keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-
-    if (frameless) {
-        FramelessContentField(
-            textFieldState = textFieldState,
-            modifier = fieldModifier
-                .padding(horizontal = Dimensions.SpacingSmall)
-                .then(checkboxTapModifier),
-            keyboardOptions = keyboardOptions,
-            scrollState = scrollState,
-            outputTransformation = outputTransformation,
-            onTextLayout = { textLayoutRef.value = it }
-        )
-        return
-    }
-
-    OutlinedTextField(
-        state = textFieldState,
-        modifier = fieldModifier.then(checkboxTapModifier),
-        label = { Text(stringResource(R.string.content)) },
-        keyboardOptions = keyboardOptions,
-        shape = RoundedCornerShape(16.dp),
-        // 🆕 v1.8.2 (IMPL_07): Externer ScrollState für programmatisches Auto-Scroll
-        scrollState = scrollState,
-        outputTransformation = outputTransformation,
-        onTextLayout = { getResult -> textLayoutRef.value = getResult() }
-    )
-}
-
-/**
- * 🆕 v1.8.1 IMPL_14: Extrahiertes Composable für ein einzelnes draggbares Checklist-Item.
- * Entkoppelt von der Separator-Logik — wiederverwendbar für unchecked und checked Items.
- */
-// Abbau: TECH_DEBT_ROADMAP.md Slice 5
-@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod") // Compose callbacks — cannot be reduced without wrapper class
-@Composable
-private fun LazyItemScope.DraggableChecklistItem(
-    item: ChecklistItemState,
-    dragDropState: DragDropListState,
-    focusNewItemId: String?,
-    onTextChange: (String, String) -> Unit,
-    onCheckedChange: (String, Boolean) -> Unit,
-    onDelete: (String) -> Unit,
-    onAddNewItemAfter: (String) -> Unit,
-    onCopyText: (String) -> Unit, // 🆕 v2.2.0: Aktion 1
-    onDuplicate: (String) -> Unit, // 🆕 v2.2.0: Aktion 2
-    onCopyToChecklist: (String) -> Unit, // 🆕 v2.2.0: Aktion 3
-    onAddToCalendar: (String) -> Unit,
-    onFocusHandled: () -> Unit,
-    onHeightChanged: () -> Unit, // 🆕 v1.8.1 (IMPL_05)
-    placementAnimationsEnabled: Boolean, // 🔧 v2.5.x: Gate gegen Open-Burst
-    isPendingUncheck: Boolean, // 🔧 v2.13.0: Uncheck aufgeschoben — Collapse statt Reorder-Animation
-    scrollsAfterUncheck: (String) -> Boolean, // 🆕 Issue #112: true → Commit ohne Settle + ohne Expand (Scroll übernimmt)
-    onUncheckCommit: (id: String, scroll: Boolean) -> Unit, // 🔧 v2.13.0: Commit nach abgeschlossenem Collapse
-    topHighlightId: String?, // 🔧 Issue #112: Highlight-Pop nach Scroll-Ankunft
-    onTopHighlightShown: () -> Unit, // 🔧 Issue #112: konsumiert topHighlightId
-    readOnly: Boolean // 🆕 Issue #156
-) {
-    // 🆕 v2.0.0 (IMPL_29b): Key-basiertes isDragging statt Index-basiert.
-    // Index-basiert hat Timing-Lücke: draggingItemIndex (aus visibleItemsInfo, OLD) vs.
-    // visualIndex (aus Composition, NEW) für 1-2 Frames nach jedem Swap → sichtbarer Sprung.
-    // Key-basiert ist immun gegen Layout/Composition-Desync.
-    val isDragging = dragDropState.isDraggingItem(item.id) && dragDropState.isDragConfirmed
-    val elevation by animateDpAsState(
-        targetValue = if (isDragging) DRAGGING_ELEVATION_DP else 0.dp,
-        label = "elevation"
-    )
-
-    val shouldFocus = item.id == focusNewItemId
-
-    LaunchedEffect(shouldFocus) {
-        if (shouldFocus) {
-            onFocusHandled()
-        }
-    }
-
-    // 🆕 v2.5.0: Trigger für Check-Tap-Animation. Wird beim Checkbox-Tap auf true
-    // gesetzt (über onCheckboxTap-Callback an die Row), und nach CHECK_ANIMATION_TOTAL_MS
-    // automatisch zurückgesetzt. Solange true → erhöhter zIndex (siehe unten) →
-    // Row wird über Nachbarn gezeichnet, unabhängig von der Draw-Reihenfolge nach
-    // dem Reorder. Key item.id: Reset-Timer überlebt Reorder, weil Composition
-    // erhalten bleibt.
-    var isCheckAnimating by remember(item.id) { mutableStateOf(false) }
-    // Detect undo/redo-driven isChecked changes (onCheckboxTap never fires in those cases)
-    val prevChecked = remember(item.id) { mutableStateOf(item.isChecked) }
-    LaunchedEffect(item.isChecked) {
-        if (item.isChecked != prevChecked.value) {
-            isCheckAnimating = true
-            prevChecked.value = item.isChecked
-        }
-    }
-    LaunchedEffect(isCheckAnimating, item.id) {
-        if (isCheckAnimating) {
-            // 🔍 DEBUG: markiert das zIndex-/Glow-Fenster in derselben Timeline wie der Frame-Trace
-            if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[ZIDX] on id=${item.id.take(CHECK_TRACE_ID_LEN)}")
-            delay(CHECK_ANIMATION_TOTAL_MS)
-            isCheckAnimating = false
-            if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[ZIDX] off id=${item.id.take(CHECK_TRACE_ID_LEN)}")
-        }
-    }
-
-    // 🔧 Issue #112: Frischer Highlight-Pop, nachdem der Scroll das Item oben ins Bild
-    // gebracht hat. Die eigene Tap-Animation kann das nicht leisten: sie wird beim Collapse
-    // bewusst beendet, und beim Commit wird die Composition disposed (Item landet oberhalb
-    // des Viewports) — nach dem Scroll startet hier alles frisch, inkl. Flip-Detektor.
-    LaunchedEffect(topHighlightId) {
-        if (topHighlightId == item.id) {
-            onTopHighlightShown()
-            isCheckAnimating = true
-        }
-    }
-
-    // 🔧 v2.13.0: Eigene Exit-Animation für jeden Uncheck mit Separator-Reorder.
-    // LazyLayoutItemAnimator ist für die Aufwärts-Richtung nicht robust (Geist am Viewport-Rand
-    // bei Ziel off-screen, Einschiebe-Artefakte parallel zum Scroll). Deshalb besitzt die
-    // Row die Animation selbst: Höhe + Alpha → 0 an Ort und Stelle, Commit des Reorders erst
-    // danach (onUncheckCommit). Der Animator hat dann nichts mehr zu animieren; ist die
-    // Zielposition sichtbar, wächst die Row dort anschließend wieder auf (Gegenstück zum
-    // Collapse). Das Model bleibt bis zum Commit unverändert — die Checkbox zeigt nur
-    // optimistisch ungecheckt (checkedOverride). Damit bleibt die v2.5.0-Invariante
-    // „isChecked-Flip und Sort im selben State-Snapshot" unangetastet.
-    val collapse = remember(item.id) { Animatable(1f) }
-
-    // Solange dieses Item seine Exit-Animation selbst fährt, darf LazyLayoutItemAnimator nicht
-    // mitmischen — weder beim Schrumpfen noch im Commit-Pass danach. Ohne dieses Gate animiert
-    // er den Reorder, sobald die Row wieder auf volle Höhe schnappt, und schiebt sie quer durchs
-    // Bild nach oben: derselbe Geist, nur 250 ms später (gemessen in
-    // ChecklistUncheckAnimationInstrumentedTest). Anders als die verworfene Variante ohne
-    // Collapse kostet das keine Nachbar-Animation: die Nachbarn sind während des Collapse
-    // bereits kontinuierlich nachgerückt.
-    var collapseOwnsPlacement by remember(item.id) { mutableStateOf(false) }
-
-    // Am Collapse-Ende entschieden: Scroll zum Ziel (Ziel liegt oberhalb des Viewports) oder
-    // Aufwachsen am Ort wie ohne Scroll-to-Top. Bleibt false bei Abbruch per Re-Tap.
-    var scrollAfterCommit by remember(item.id) { mutableStateOf(false) }
-    val currentScrollsAfterUncheck by rememberUpdatedState(scrollsAfterUncheck)
-
-    LaunchedEffect(isPendingUncheck) {
-        if (isPendingUncheck) {
-            // Glow/Scale-Pop sofort beenden: auf einer kollabierenden Row wirkt das Highlight
-            // falsch — und es klebte sonst nach dem Scroll sichtbar am wieder
-            // auftauchenden Item (die 500-ms-Animation lief den Scroll schlicht ab).
-            // Nach Scroll-Ankunft triggert topHighlightId stattdessen einen frischen Pop.
-            isCheckAnimating = false
-            collapseOwnsPlacement = true
-            scrollAfterCommit = false
-            collapse.animateTo(0f, tween(UNCHECK_COLLAPSE_MS))
-            scrollAfterCommit = currentScrollsAfterUncheck(item.id)
-            if (!scrollAfterCommit) {
-                // Die Nachbarn folgen der schrumpfenden Row über ihre animateItem-Spring und
-                // hinken dabei hinterher. Der Commit killt via requestScrollToItem alle
-                // Placement-Animationen — käme er sofort, schnappte der Rest sichtbar nach
-                // (gemessen ~1/3 Zeilenhöhe in einem Frame). Deshalb erst die Spring auslaufen
-                // lassen; die Row ist bereits unsichtbar, die Wartezeit kostet optisch nichts.
-                // Mit Scroll zum Ziel entfällt das: der direkt folgende Scroll übernimmt die
-                // gesamte Bewegung und maskiert den Spring-Schnitt — dafür startet der Scroll
-                // ~200 ms früher, was den Tap spürbar direkter macht.
-                delay(UNCHECK_COMMIT_SETTLE_MS)
-            }
-            onUncheckCommit(item.id, scrollAfterCommit)
-            return@LaunchedEffect
-        }
-        if (!collapseOwnsPlacement) return@LaunchedEffect
-        if (scrollAfterCommit && !item.isChecked) {
-            // Commit mit folgendem Scroll: NICHT am Ziel aufwachsen. Ein Expand während
-            // des Scrolls drückt die Nachbarn mitten in der Bewegung auseinander
-            // (sichtbares „Einschieben"). Höhe still zurücksetzen; das Item ist beim Commit
-            // off-screen, der Scroll bringt es fertig aufgebaut ins Bild.
-            collapse.snapTo(1f)
-            repeat(PLACEMENT_SUPPRESS_FRAMES) { withFrameNanos { } }
-        } else {
-            // Beide Wege enden mit voller Höhe:
-            // - Abbruch per Re-Tap: das Model wurde nie geändert → Row klappt an Ort und
-            //   Stelle wieder auf.
-            // - Nach dem Commit ohne Scroll (Scroll-to-Top aus, oder Ziel im Bild): das Item sitzt an seiner neuen Position in der
-            //   unchecked-Sektion. Ist die sichtbar, wächst die Row dort als Gegenstück zum
-            //   Collapse auf; off-screen läuft die Animation unsichtbar und kostet nichts.
-            // Solange sie läuft, bleibt animateItem über collapseOwnsPlacement aus — danach
-            // startet der Modifier ohne Baseline, also ohne nachgeholte Placement-Animation.
-            collapse.animateTo(1f, tween(UNCHECK_COLLAPSE_MS))
-        }
-        collapseOwnsPlacement = false
-    }
-    // Screen/Item wird disposed, während der Collapse läuft → Commit sofort nachholen.
-    // Ohne das ginge der Tap verloren (das Model wurde ja noch nicht angefasst).
-    val pendingAtDispose = rememberUpdatedState(isPendingUncheck)
-    val commitAtDispose = rememberUpdatedState(onUncheckCommit)
-    DisposableEffect(item.id) {
-        onDispose {
-            if (pendingAtDispose.value) commitAtDispose.value(item.id, false)
-        }
-    }
-
-    ChecklistItemRow(
-        item = item,
-        onTextChange = { onTextChange(item.id, it) },
-        onCheckedChange = { onCheckedChange(item.id, it) },
-        onDelete = { onDelete(item.id) },
-        onAddNewItem = { onAddNewItemAfter(item.id) },
-        onCopyText = { onCopyText(item.id) }, // 🆕 v2.2.0
-        onDuplicate = { onDuplicate(item.id) }, // 🆕 v2.2.0
-        onCopyToChecklist = { onCopyToChecklist(item.id) }, // 🆕 v2.2.0
-        onAddToCalendar = { onAddToCalendar(item.id) },
-        isCheckAnimating = isCheckAnimating, // 🆕 v2.5.0
-        onCheckboxTap = { isCheckAnimating = true }, // 🆕 v2.5.0
-        // 🔧 v2.13.0: Solange der Uncheck aufgeschoben ist, zeigt die Checkbox optimistisch
-        // ungecheckt — das Model folgt erst beim Commit.
-        checkedOverride = if (isPendingUncheck) false else null,
-        readOnly = readOnly, // 🆕 Issue #156
-        requestFocus = shouldFocus,
-        isDragging = isDragging,
-        isAnyItemDragging = dragDropState.isAnyItemDragging,
-        dragModifier = Modifier.dragContainer(
-            dragDropState = dragDropState,
-            itemKey = item.id
-        ),
-        onHeightChanged = onHeightChanged, // 🆕 v1.8.1 (IMPL_05)
-        modifier = Modifier
-            // 🔧 v2.13.0: Collapse an Ort und Stelle (siehe oben). Als Layout-Modifier, damit
-            // die LazyColumn die schrumpfende Höhe misst und die Nachbarn kontinuierlich
-            // nachrücken — AnimatedVisibility würde die Row-Struktur verändern.
-            .then(
-                if (collapse.value < 1f) {
-                    // graphicsLayer VOR layout: so misst der Clip-Node die bereits reduzierte
-                    // Höhe und schneidet den überstehenden Row-Inhalt ab. Umgekehrt läge der
-                    // Clip innerhalb und die Row würde in den Nachbarn hineinragen.
-                    Modifier
-                        .graphicsLayer {
-                            alpha = collapse.value
-                            clip = true
-                        }
-                        .layout { measurable, constraints ->
-                            val placeable = measurable.measure(constraints)
-                            val height = (placeable.height * collapse.value).roundToInt()
-                            layout(placeable.width, height) { placeable.place(0, 0) }
-                        }
-                } else {
-                    Modifier
-                }
-            )
-            // 🆕 v1.8.2 (IMPL_11): Placement-Animation für nicht-gedraggte Items.
-            // Historisch (vor IMPL_11): animateItem() mit fadeInSpec/fadeOutSpec auf ALLEN Items
-            // → sichtbares Flickering bei langen Items beim schnellen Scrollen.
-            // Lösung damals: fade entfernen, animateItem nur während Drag.
-            // 🆕 v2.5.0: Bedingung von „nur während Drag" auf „immer außer beim gedraggten Item"
-            // erweitert. Grund: Beim Check/Uncheck-Sort (außerhalb DnD) gab es vorher keine
-            // Placement-Animation → Items sprangen abrupt. Da fadeInSpec/fadeOutSpec weiterhin
-            // null sind, gilt die ursprüngliche Flicker-Ursache nicht. Der gedraggte Item bleibt
-            // ausgenommen, weil seine Position via graphicsLayer.translationY gesteuert wird.
-            // 🔧 v2.5.x: Zusätzliches Gate `placementAnimationsEnabled` verhindert, dass
-            // Modifier.animateItem zwischen den ersten Layout-Pässen nach Open der Checkliste
-            // die Offset-Diffs animiert (Symptom: Items „schieben sich rein"). Sobald das
-            // initiale Layout stabil ist, ist das Gate offen — alle Check/Uncheck-Reorder-
-            // Animationen aus Commit 7156c12 spielen unverändert.
-            .then(
-                if (!isDragging && placementAnimationsEnabled && !collapseOwnsPlacement) {
-                    Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
-                } else {
-                    Modifier
-                }
-            )
-            // 🆕 v2.5.0: zIndex-Tabelle:
-            //   isDragging              → DRAGGING_ITEM_Z_INDEX (10f)  – Drag wins
-            //   isCheckAnimating        → CHECKING_ITEM_Z_INDEX  (5f)  – Glow/Move on top
-            //   sonst                   → 0f
-            .zIndex(
-                when {
-                    isDragging -> DRAGGING_ITEM_Z_INDEX
-                    isCheckAnimating -> CHECKING_ITEM_Z_INDEX
-                    else -> 0f
-                }
-            )
-            .graphicsLayer {
-                if (isDragging) translationY = dragDropState.draggingItemOffset
-                shadowElevation = elevation.toPx()
-                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
-                clip = isDragging || elevation > 0.dp
-            }
-            .background(
-                // UI-Beta (E7): in Ruhe durchsichtig, damit der Farbverlauf durchscheint. Nur Farbe, Modifier
-                // und Reihenfolge bleiben (Regel aus dnd-protection/checklist-animations). Beim Ziehen und
-                // Abhaken deckend, sonst schöbe sich eine Zeile durchsichtig über die andere.
-                color = if (LocalNewDesign.current && !isDragging && !isCheckAnimating && elevation == 0.dp) {
-                    Color.Transparent
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-                shape = RoundedCornerShape(ITEM_CORNER_RADIUS_DP.dp)
-            )
-    )
-}
-
-// 🔧 v2.13.0: internal statt private — ChecklistUncheckAnimationInstrumentedTest hostet den
-// Editor direkt, um die Collapse-/Placement-Animationen frameweise zu vermessen.
-// Abbau: TECH_DEBT_ROADMAP.md Slice 5
-@Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod") // Compose functions commonly have many callback parameters
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-internal fun ChecklistEditor(
-    items: List<ChecklistItemState>,
-    scope: kotlinx.coroutines.CoroutineScope,
-    focusNewItemId: String?,
-    currentSortOption: ChecklistSortOption, // 🔀 v1.8.0: Aktuelle Sortierung
-    scrollTopOnUncheck: Boolean, // 🆕 Issue #112: Aufhaken scrollt zum Ziel, sofern es oberhalb des Viewports landet
-    checklistScrollAction: SharedFlow<NoteEditorViewModel.ChecklistScrollAction>, // 🆕 v1.9.0 (F14): Scroll action on check/un-check
-    onTextChange: (String, String) -> Unit,
-    onCheckedChange: (String, Boolean) -> Unit,
-    onDelete: (String) -> Unit,
-    onAddNewItemAfter: (String) -> Unit,
-    onCopyText: (String) -> Unit, // 🆕 v2.2.0: Aktion 1
-    onDuplicate: (String) -> Unit, // 🆕 v2.2.0: Aktion 2
-    onCopyToChecklist: (String) -> Unit, // 🆕 v2.2.0: Aktion 3
-    onAddToCalendar: (String) -> Unit,
-    onAddItemAtEnd: () -> Unit,
-    onMove: (Int, Int) -> Unit,
-    onFocusHandled: () -> Unit,
-    onSortClick: () -> Unit, // 🔀 v1.8.0
-    modifier: Modifier = Modifier,
-    readOnly: Boolean = false // 🆕 Issue #156: Lesemodus, nur Abhaken
-) {
-    // IMPL_29q Q1: LazyLayoutCacheWindow ersetzt beyondBoundsItemCount (entfernt in Compose 1.10+).
-    // Hält 0.55 × Viewport auf jeder Seite composiert → 865px Buffer (3 große Items à 271px).
-    // Verhindert Composable-Recycling beim Auto-Scroll+Swap → kein toter Pointer-Scope.
-    val listState = rememberLazyListState(LazyLayoutCacheWindow(0.55f, 0.55f))
-    val dragDropState = rememberDragDropListState(
-        lazyListState = listState,
-        scope = scope,
-        onMove = onMove
-    )
-
-    // 🔧 v2.5.x: Gate für LazyColumn-Placement-Animationen (Modifier.animateItem).
-    // Beim Öffnen einer Checkliste durchläuft die LazyColumn mehrere Layout-Pässe
-    // (Text-Messung im OutlinedTextField, dynamische Höhen via onHeightChanged,
-    // LazyLayoutCacheWindow-Vorbau). Wenn animateItem in diesem Fenster aktiv ist,
-    // animiert LazyListItemAnimator die Offset-Diffs zwischen den Pässen → Items
-    // „schieben sich rein". Dieses Gate hält animateItem deaktiviert, bis das
-    // Initial-Layout zwei aufeinanderfolgende Frames lang unverändert geblieben
-    // ist (oder INITIAL_LAYOUT_SETTLE_TIMEOUT_MS abgelaufen ist). Nach Aktivierung
-    // bleibt das Gate für die Lebenszeit des Screens offen — alle späteren Reorder
-    // (Check/Uncheck — siehe Commit 7156c12) animieren wie vorgesehen.
-    // Userinteraktionen (Tap, Drag) erfolgen lange nach dem Settle → kein Konflikt
-    // mit der Check-Tap-Animation aus dem Commit.
-    var placementAnimationsEnabled by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        val deadline = withFrameNanos { it } + INITIAL_LAYOUT_SETTLE_TIMEOUT_MS * 1_000_000L
-        var previousSnapshot: List<Pair<Any, Int>> = emptyList()
-        var stableFrames = 0
-        var settled = false
-        while (!settled) {
-            val now = withFrameNanos { it }
-            val current = listState.layoutInfo.visibleItemsInfo.map { it.key to it.offset }
-            if (current.isNotEmpty() && current == previousSnapshot) {
-                stableFrames++
-                if (stableFrames >= 2) settled = true
-            } else {
-                stableFrames = 0
-            }
-            previousSnapshot = current
-            if (now >= deadline) settled = true
-        }
-        placementAnimationsEnabled = true
-    }
-
-    // 🔧 v2.13.0: Item, dessen Uncheck aufgeschoben ist, während seine Row kollabiert.
-    // Genau ein Slot — ein zweiter Uncheck committet den ersten sofort
-    // (siehe [onChecklistCheckedChange]).
-    var pendingUncheckId by remember { mutableStateOf<String?>(null) }
-
-    // 🔧 Issue #112: Handoff Commit → Scroll-Handler. Die Tap-Animation des Items stirbt
-    // auf diesem Pfad doppelt: erst bewusst beim Collapse-Start, dann endgültig, weil das Item
-    // beim Commit oberhalb des Viewports landet und seine Composition (inkl. Flip-Detektor)
-    // disposed wird. Deshalb triggert der Scroll-Handler nach Ankunft einen frischen
-    // Highlight-Pop am Ziel-Item (topHighlightId, konsumiert in DraggableChecklistItem).
-    var scrollTopUncheckId by remember { mutableStateOf<String?>(null) }
-    var topHighlightId by remember { mutableStateOf<String?>(null) }
-
-    // 🔍 v2.13.0 (nur DEBUG): Trace der Check/Uncheck-Placement-Animation. Wird im
-    // onCheckedChange-Callback gesetzt (nach dem Pre-Anchor, vor dem Model-Update),
-    // damit der Frame-Trace ab dem ersten Layout-Pass nach dem Reorder läuft.
-    var checkTrace by remember { mutableStateOf<CheckTrace?>(null) }
-    if (BuildConfig.DEBUG) {
-        LaunchedEffect(checkTrace) {
-            checkTrace?.let { traceCheckPlacement(listState, it) }
-        }
-    }
-
-    // 🆕 v1.8.1 (IMPL_05): Auto-Scroll bei Zeilenumbruch
-    var scrollToItemIndex by remember { mutableStateOf<Int?>(null) }
-
-    // 🆕 v1.8.2 (IMPL_10): Kontrollierter Scroll zum neuen Item (verhindert Sprung ans Ende)
-    var scrollToNewItemIndex by remember { mutableStateOf<Int?>(null) }
-
-    // 🆕 v1.10.0-P2: Minimal scroll — only ensure new item is visible, don't force to top
-    LaunchedEffect(scrollToNewItemIndex) {
-        scrollToNewItemIndex?.let { index ->
-            // Wait one frame for the new item to be laid out
-            delay(Constants.CHECKLIST_SCROLL_LAYOUT_DELAY_MS)
-            val layoutInfo = listState.layoutInfo
-            val viewportEnd = layoutInfo.viewportEndOffset
-            val viewportStart = layoutInfo.viewportStartOffset
-            val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == index }
-            if (itemInfo != null) {
-                val itemBottom = itemInfo.offset + itemInfo.size
-                val itemTop = itemInfo.offset
-                when {
-                    itemBottom > viewportEnd ->
-                        // Partially below viewport — scroll just enough to show it
-                        listState.animateScrollBy((itemBottom - viewportEnd).toFloat())
-                    itemTop < viewportStart ->
-                        // Partially above viewport — scroll up just enough
-                        listState.animateScrollBy((itemTop - viewportStart).toFloat())
-                    // else: fully visible → no scroll needed
-                }
-            } else {
-                // Item not yet visible (far away) — fallback: scroll to it
-                listState.animateScrollToItem(index)
-            }
-            scrollToNewItemIndex = null
-        }
-    }
-
-    // 🆕 v1.9.0 (F14): Scroll action handler for check/un-check
-    LaunchedEffect(Unit) {
-        checklistScrollAction.collect { action ->
-            when (action) {
-                is NoteEditorViewModel.ChecklistScrollAction.ScrollToItem -> {
-                    // Nur nach einem Collapse, der den Scroll angekündigt hat. Ziel im Bild,
-                    // Commit beim Dispose und Uncheck ohne Separator bleiben stehen.
-                    val highlightId = scrollTopUncheckId
-                    scrollTopUncheckId = null
-                    if (BuildConfig.DEBUG) {
-                        Logger.d(CHECK_TRACE_TAG, "[SCROLL] ScrollToItem(${action.index}) scroll=${highlightId != null}")
-                    }
-                    if (highlightId != null) {
-                        // Der Collector läuft direkt nach dem Commit, bevor die neue Reihenfolge
-                        // composiert ist. scrollToItem misst sofort (forceRemeasure): gegen die alte
-                        // Liste wäre der Index ein anderes Item, und das Key-Anchoring nach dem
-                        // Commit verschöbe alles um eine Zeile. Deshalb erst den Commit-Pass abwarten.
-                        repeat(PLACEMENT_SUPPRESS_FRAMES) { withFrameNanos { } }
-                        val land = if (action.index <= SCROLL_TO_START_MAX_INDEX) 0 else action.index
-                        if (cutAndGlideTo(listState, land, highlightId, dragDropState.separatorVisualIndex)) {
-                            topHighlightId = highlightId
-                        }
-                    }
-                }
-                is NoteEditorViewModel.ChecklistScrollAction.NoScroll -> {
-                    if (BuildConfig.DEBUG) Logger.d(CHECK_TRACE_TAG, "[SCROLL] NoScroll")
-                    // Check → intentionally do nothing.
-                    // LazyColumn uses stable keys (item.id), so Compose preserves
-                    // the scroll position naturally during recomposition.
-                }
-            }
-        }
-    }
-
-    // 🆕 v1.8.2 (IMPL_10): Berechne Visual-Index für neues Item bei focusNewItemId
-    LaunchedEffect(focusNewItemId) {
-        focusNewItemId?.let { itemId ->
-            val dataIndex = items.indexOfFirst { it.id == itemId }
-            if (dataIndex >= 0) {
-                val hasSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
-                    currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
-                    currentSortOption == ChecklistSortOption.CREATION_DATE ||
-                    currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
-                val unchecked = items.count { !it.isChecked }
-                val visualIndex = if (hasSeparator && dataIndex >= unchecked) {
-                    dataIndex + 1 // +1 für Separator
-                } else {
-                    dataIndex
-                }
-                scrollToNewItemIndex = visualIndex
-            }
-        }
-    }
-
-    // 🆕 v1.8.0 (IMPL_017 + IMPL_020): Separator nur bei MANUAL, UNCHECKED_FIRST und CREATION_DATE anzeigen
-    val uncheckedCount = items.count { !it.isChecked }
-    val checkedCount = items.count { it.isChecked }
-    val shouldShowSeparator = currentSortOption == ChecklistSortOption.MANUAL ||
-        currentSortOption == ChecklistSortOption.UNCHECKED_FIRST ||
-        currentSortOption == ChecklistSortOption.CREATION_DATE ||
-        currentSortOption == ChecklistSortOption.CREATION_DATE_DESC
-    val showSeparator = shouldShowSeparator &&
-        (
-            (uncheckedCount > 0 && checkedCount > 0) ||
-                // 🆕 v1.8.2 (IMPL_26): Separator während Drag beibehalten wenn er vorher sichtbar war.
-                // Wenn das letzte Item einer Seite über den Separator gezogen wird, wird ein Count 0.
-                // Ohne diesen Guard verschwindet der Separator → visualItemCount ändert sich →
-                // draggingItemIndex zeigt auf falschen Slot → Drag bricht ab.
-                // dragDropState.separatorVisualIndex hat noch den Wert der VORHERIGEN Composition
-                // (SideEffect läuft erst nach Composition) → >= 0 = Separator war vorher sichtbar.
-                (dragDropState.isAnyItemDragging && dragDropState.separatorVisualIndex >= 0)
-            )
-
-    Column(modifier = modifier) {
-        // 🆕 v1.8.1 IMPL_14: Separator-Position für DragDropState aktualisieren
-        // 🆕 v1.8.2 (IMPL_26): SideEffect statt LaunchedEffect — synchron nach Composition,
-        // damit separatorVisualIndex sofort aktuell ist für den nächsten onDrag-Event
-        val separatorVisualIndex = if (showSeparator) uncheckedCount else -1
-        SideEffect {
-            dragDropState.separatorVisualIndex = separatorVisualIndex
-            if (BuildConfig.DEBUG && dragDropState.isAnyItemDragging) {
-                Logger.d("DragDrop", "[SEPARATOR] idx=$separatorVisualIndex")
-            }
-        }
-
-        // 🆕 v1.8.1 + v1.8.2 (IMPL_10): Viewport-aware Auto-Scroll bei Zeilenwachstum
-        // Scrollt pixel-genau um die Differenz, statt zum nächsten Item zu springen
-        LaunchedEffect(scrollToItemIndex) {
-            scrollToItemIndex?.let { index ->
-                delay(AUTO_SCROLL_DELAY_MS) // Warten bis Layout-Pass abgeschlossen
-                val visibleItems = listState.layoutInfo.visibleItemsInfo
-                val itemInfo = visibleItems.find { it.index == index }
-                if (itemInfo != null) {
-                    val viewportEnd = listState.layoutInfo.viewportEndOffset
-                    val itemBottom = itemInfo.offset + itemInfo.size
-                    if (itemBottom > viewportEnd) {
-                        // Item ragt unter den sichtbaren Bereich — genau um die Differenz scrollen
-                        listState.scroll { scrollBy((itemBottom - viewportEnd).toFloat()) }
-                    }
-                }
-                scrollToItemIndex = null
-            }
-        }
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            // IMPL_29f F2: Während Drag: User-Scroll deaktivieren.
-            // Verhindert Gesture-Konkurrenz zwischen LazyColumn-Scroll und Drag-Gesture (RC-2).
-            // Scrollen erfolgt ausschließlich über programmatisches Auto-Scroll.
-            userScrollEnabled = !dragDropState.isAnyItemDragging
-        ) {
-            // 🆕 v1.8.2 (IMPL_26): Unified items-Block statt drei getrennte Blöcke.
-            // Bei getrennten itemsIndexed-Blöcken für unchecked/checked Items wird die
-            // Composition zerstört wenn ein Item den Separator überschreitet (anderer
-            // Content-Provider) → PointerInput wird destroyed → Drag abgebrochen.
-            // Ein einziger items-Block bewahrt die Composition bei Key-Erhalt → Drag bleibt aktiv.
-            val visualItemCount = if (showSeparator) items.size + 1 else items.size
-
-            // Lokale Konvertierung mit aktuellem separatorVisualIndex (nicht vom dragDropState,
-            // der hat ggf. noch den alten Wert bis SideEffect läuft)
-            val localVisualToDataIndex = { visualIndex: Int ->
-                if (!showSeparator || separatorVisualIndex < 0) {
-                    visualIndex
-                } else if (visualIndex > separatorVisualIndex) {
-                    visualIndex - 1
-                } else {
-                    visualIndex
-                }
-            }
-
-            items(
-                count = visualItemCount,
-                key = { visualIndex ->
-                    if (showSeparator && visualIndex == separatorVisualIndex) {
-                        "separator"
-                    } else {
-                        items[localVisualToDataIndex(visualIndex)].id
-                    }
-                },
-                contentType = { visualIndex ->
-                    if (showSeparator && visualIndex == separatorVisualIndex) {
-                        "separator"
-                    } else {
-                        "checklist_item"
-                    }
-                }
-            ) { visualIndex ->
-                if (showSeparator && visualIndex == separatorVisualIndex) {
-                    CheckedItemsSeparator(
-                        checkedCount = checkedCount,
-                        isDragActive = dragDropState.isAnyItemDragging,
-                        modifier = if (placementAnimationsEnabled) Modifier.animateItem() else Modifier
-                    )
-                } else {
-                    val dataIndex = localVisualToDataIndex(visualIndex)
-                    val item = items[dataIndex]
-                    DraggableChecklistItem(
-                        item = item,
-                        dragDropState = dragDropState,
-                        focusNewItemId = focusNewItemId,
-                        onTextChange = onTextChange,
-                        onCheckedChange = { id, checked ->
-                            if (BuildConfig.DEBUG) {
-                                checkTrace = CheckTrace(System.nanoTime(), id, checked)
-                            }
-                            onChecklistCheckedChange(
-                                listState = listState,
-                                itemId = id,
-                                checked = checked,
-                                separatorVisualIndex = separatorVisualIndex,
-                                pendingUncheckId = pendingUncheckId,
-                                setPendingUncheckId = { pendingUncheckId = it },
-                                commitChecked = onCheckedChange
-                            )
-                        },
-                        onDelete = onDelete,
-                        onAddNewItemAfter = onAddNewItemAfter,
-                        onCopyText = onCopyText, // 🆕 v2.2.0
-                        onDuplicate = onDuplicate, // 🆕 v2.2.0
-                        onCopyToChecklist = onCopyToChecklist, // 🆕 v2.2.0
-                        onAddToCalendar = onAddToCalendar,
-                        onFocusHandled = onFocusHandled,
-                        onHeightChanged = { scrollToItemIndex = visualIndex },
-                        placementAnimationsEnabled = placementAnimationsEnabled,
-                        isPendingUncheck = item.id == pendingUncheckId,
-                        scrollsAfterUncheck = { id ->
-                            // Ziel oberhalb des Viewports (oder an der ersten sichtbaren Zeile: ein
-                            // Einfügen vor dem ersten sichtbaren Key landet oberhalb) → Scroll.
-                            // Sonst wächst die Row am Ziel auf wie ohne Scroll-to-Top.
-                            scrollTopOnUncheck &&
-                                sortChecklistStates(
-                                    items.map { if (it.id == id) it.copy(isChecked = false) else it },
-                                    currentSortOption
-                                ).indexOfFirst { it.id == id } <= listState.firstVisibleItemIndex
-                        },
-                        onUncheckCommit = { id, scroll ->
-                            if (scroll) scrollTopUncheckId = id
-                            commitDeferredUncheck(
-                                listState = listState,
-                                toggledId = id,
-                                commitChecked = onCheckedChange,
-                                reanchor = !scroll
-                            )
-                            pendingUncheckId = null
-                        },
-                        topHighlightId = topHighlightId,
-                        onTopHighlightShown = { topHighlightId = null },
-                        readOnly = readOnly
-                    )
-                }
-            }
-        }
-
-        // 🔀 v1.8.0: Add Item Button + Sort Button
-        // 🆕 Issue #156: im Lesemodus ausgeblendet, die Liste nutzt die volle Höhe
-        if (!readOnly) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                // UI-Beta (C2): getönter Knopf. Liegt außerhalb der LazyColumn, berührt das Ziehen nicht;
-                // FilledTonalButton und TextButton haben dieselbe Mindesthöhe (40 dp).
-                val addItemContent: @Composable RowScope.() -> Unit = {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text(stringResource(R.string.add_item))
-                }
-                if (LocalNewDesign.current) {
-                    FilledTonalButton(onClick = onAddItemAtEnd, content = addItemContent)
-                } else {
-                    TextButton(onClick = onAddItemAtEnd, content = addItemContent)
-                }
-
-                IconButton(onClick = onSortClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Sort,
-                        contentDescription = stringResource(R.string.sort_checklist),
-                        modifier = androidx.compose.ui.Modifier.padding(4.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-// v1.5.0: Local DeleteConfirmationDialog removed - now using shared component from ui/main/components/
-
-/** 🆕 v1.9.0: TopAppBar title with optional autosave confirmation indicator. */
-@Composable
-private fun NoteEditorToolbarTitle(toolbarTitle: ToolbarTitle, autosaveIndicatorVisible: Boolean, compact: Boolean = false) {
-    Column {
-        Text(
-            text = if (compact) {
-                when (toolbarTitle) {
-                    ToolbarTitle.NEW_NOTE, ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.toolbar_title_new)
-                    ToolbarTitle.EDIT_NOTE, ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.toolbar_title_edit)
-                }
-            } else {
-                when (toolbarTitle) {
-                    ToolbarTitle.NEW_NOTE -> stringResource(R.string.new_note)
-                    ToolbarTitle.EDIT_NOTE -> stringResource(R.string.edit_note)
-                    ToolbarTitle.NEW_CHECKLIST -> stringResource(R.string.new_checklist)
-                    ToolbarTitle.EDIT_CHECKLIST -> stringResource(R.string.edit_checklist)
-                }
-            },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        AnimatedVisibility(
-            visible = autosaveIndicatorVisible,
-            enter = fadeIn(animationSpec = tween(Constants.AUTOSAVE_INDICATOR_FADE_MS)),
-            exit = fadeOut(animationSpec = tween(Constants.AUTOSAVE_INDICATOR_FADE_MS))
-        ) {
-            Text(
-                text = stringResource(R.string.autosave_indicator),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-/**
- * 🆕 v2.12.0: Paste-Handler für das Content-Feld. Bilder zuerst („Bild kopieren"
- * in Chrome legt Uri **und** ein <img>-HTML-Fragment in die ClipData — das Bild ist
- * das, was der Nutzer will), dann HTML→Markdown. Rückgabe `null` = konsumiert,
- * sonst geht [transferable] den normalen Paste-Weg.
- *
- * HTML-Konvertierung läuft zweistufig: Rohtext synchron (eigener Undo-Eintrag),
- * Markdown-Ersetzung async off-main (zweiter Undo-Eintrag → direktes Undo stellt
- * den Rohtext wieder her).
- */
-@OptIn(ExperimentalFoundationApi::class)
-private fun handlePastedContent(
-    transferable: TransferableContent,
-    context: Context,
-    textFieldState: TextFieldState,
-    scope: CoroutineScope,
-    onPasteImages: (List<Uri>) -> Unit
-): TransferableContent? {
-    val clipData = transferable.clipEntry.clipData
-    val imageUris = (0 until clipData.itemCount)
-        .mapNotNull { clipData.getItemAt(it).uri }
-        .filter { context.contentResolver.getType(it)?.startsWith("image/") == true }
-    if (imageUris.isNotEmpty()) {
-        onPasteImages(imageUris)
-        return null
-    }
-
-    val html = transferable.clipEntry.firstHtmlText()
-    if (html == null || !HtmlToMarkdown.hasRichContent(html)) {
-        return transferable // nicht zuständig → normaler Paste
-    }
-    // ponytail: gegen die style-gestrippte Länge messen — Chrome inlined computed
-    // styles, die den Clip weit über den Cap blähen; convert() bekommt trotzdem das
-    // Original-HTML (off-main, Größe egal dort), damit style-Attribut-Fett/Kursiv bleibt.
-    val measured = HtmlToMarkdown.stripStyleAttributes(html).length
-    if (measured > HtmlToMarkdown.MAX_HTML_LENGTH) {
-        Logger.d("HtmlPaste", "over cap: raw=${html.length} stripped=$measured → plaintext fallback")
-        return transferable // nicht zuständig → normaler Paste
-    }
-
-    val plain = clipData.getItemAt(0).coerceToText(context).toString()
-    val sel = textFieldState.selection
-    val start = sel.min
-    // Stufe 1 (synchron): Rohtext einfügen
-    textFieldState.edit {
-        if (!sel.collapsed) delete(sel.min, sel.max)
-        insert(start, plain)
-        selection = TextRange(start + plain.length)
-    }
-    // Stufe 2 (async, off-main): zu Markdown ersetzen
-    scope.launch {
-        val markdown = withContext(Dispatchers.Default) { HtmlToMarkdown.convert(html, plain) }
-        if (markdown == plain) Logger.d("HtmlPaste", "convert() returned fallback: raw=${html.length}")
-        val end = start + plain.length
-        // Guard: nur ersetzen, wenn der Rohtext dort noch unverändert steht
-        // (Nutzer könnte während der Konvertierung getippt haben)
-        if (markdown != plain &&
-            textFieldState.text.length >= end &&
-            textFieldState.text.subSequence(start, end).toString() == plain
-        ) {
-            textFieldState.edit {
-                replace(start, end, markdown)
-                selection = TextRange(start + markdown.length)
-            }
-        }
-    }
-    return null // konsumiert
-}
-
-/** First non-blank `text/html` payload across all clip items, or null. */
-private fun ClipEntry.firstHtmlText(): String? {
-    val data = clipData
-    for (i in 0 until data.itemCount) {
-        val html = data.getItemAt(i).htmlText
-        if (!html.isNullOrBlank()) return html
-    }
-    return null
-}
-
-/**
- * Tipp auf `[ ]`/`[x]` am Zeilenanfang schaltet die Aufgabe um. [scrollOffsetY]: ohne Rahmen (UI-Beta)
- * liegt der Tipp im Koordinatenraum des Textes, nur der Scroll fehlt; mit Rahmen 0 wie bisher.
- */
-private fun toggleTaskCheckbox(event: PointerEvent, layout: TextLayoutResult?, textFieldState: TextFieldState, scrollOffsetY: Int) {
-    if (event.type != PointerEventType.Press) return
-    val rawPos = event.changes.firstOrNull()?.position ?: return
-    val tapPos = rawPos.copy(y = rawPos.y + scrollOffsetY)
-    if (layout == null) return
-    val charOff = layout.getOffsetForPosition(tapPos)
-    val rawText = textFieldState.text.toString()
-    val lineStartOff = rawText.lastIndexOf('\n', (charOff - 1).coerceAtLeast(0))
-        .let { if (it < 0) 0 else it + 1 }
-    if (charOff - lineStartOff > CHECKBOX_TAP_PREFIX_COLS) return
-    val lineEndOff = rawText.indexOf('\n', lineStartOff).let { if (it < 0) rawText.length else it }
-    val rawLine = rawText.substring(lineStartOff, lineEndOff)
-    val taskMatch = MarkdownEngine.TASK_LIST_REGEX.matchEntire(rawLine) ?: return
-    val isChecked = taskMatch.groupValues[1].equals("x", ignoreCase = true)
-    // Aus dem Match statt fixem Offset: der Marker darf eingerückt sein, "*"/"+" heißen,
-    // und "- []" hat gar kein Zeichen zwischen den Klammern (replace über Länge 0 = Insert).
-    val open = lineStartOff + rawLine.indexOf('[')
-    val close = lineStartOff + rawLine.indexOf(']')
-    textFieldState.edit {
-        replace(open + 1, close, if (isChecked) " " else "x")
     }
 }

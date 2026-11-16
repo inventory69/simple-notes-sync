@@ -436,11 +436,22 @@ class HtmlPasteInstrumentedTest {
      * jetzt off-main statt stumm auf Plaintext zurückzufallen.
      */
     @Test fun large_html_below_limit_still_pastes_as_markdown() {
-        val filler = "x".repeat(LARGE_HTML_FILLER)
+        // Wörter statt eines einzigen Riesenworts: das prüft long_word_paste_keeps_the_app_alive.
+        val filler = "xxxxxxxxx ".repeat(LARGE_HTML_FILLER / 10)
         setHtmlClip(html = "<b>bold</b> $filler", plain = "bold $filler")
         contentField().performClick()
         pasteAndAwait("**bold**")
         contentField().assertTextContains("**bold**", substring = true)
+    }
+
+    /**
+     * Ein Wort ohne Leerraum (Base64) mit 250 000 Zeichen ließ das native Textlayout auf über
+     * 2 GB wachsen, Android beendete die App. Läuft der Test durch, lebt der Prozess noch.
+     */
+    @Test fun long_word_paste_keeps_the_app_alive() {
+        setPlainClip("start " + "x".repeat(LARGE_HTML_FILLER))
+        contentField().performClick()
+        pasteAndAwait("start")
     }
 
     private companion object {

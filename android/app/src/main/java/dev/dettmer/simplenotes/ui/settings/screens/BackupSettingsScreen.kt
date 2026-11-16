@@ -68,8 +68,8 @@ private const val DIALOG_CLOSE_DELAY_MS = 200L
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
-    val isBackupInProgress by viewModel.isBackupInProgress.collectAsState()
-    val backupOutcome by viewModel.backupOutcome.collectAsState()
+    val isBackupInProgress by viewModel.backup.isBackupInProgress.collectAsState()
+    val backupOutcome by viewModel.backup.backupOutcome.collectAsState()
 
     // Das Ergebnis bleibt stehen, solange der Screen offen ist, und wird erst beim Verlassen
     // verworfen — bei Backup/Restore ist die Rückmeldung zu wichtig für eine Snackbar.
@@ -81,11 +81,11 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val activity = LocalActivity.current
     DisposableEffect(activity) {
         onDispose {
-            if (activity?.isChangingConfigurations != true) viewModel.clearBackupOutcome()
+            if (activity?.isChangingConfigurations != true) viewModel.backup.clearBackupOutcome()
         }
     }
 
-    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
+    val isServerConfigured by viewModel.server.isServerConfigured.collectAsState()
 
     // Restore dialog state
     var showRestoreDialog by remember { mutableStateOf(false) }
@@ -122,7 +122,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 pendingBackupUri = it
                 showEncryptionPasswordDialog = true
             } else {
-                viewModel.createBackup(it, password = null, includeServerSettings = pendingIncludeServerSettings)
+                viewModel.backup.createBackup(it, password = null, includeServerSettings = pendingIncludeServerSettings)
             }
         }
     }
@@ -136,7 +136,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             backupHasServerSettings = false
             restoreServerSettings = false
             // v1.9.0: Check if the backup contains server settings (plaintext only; encrypted checked after password)
-            viewModel.checkBackupContainsAppSettings(it) { hasSettings ->
+            viewModel.backup.checkBackupContainsAppSettings(it) { hasSettings ->
                 backupHasServerSettings = hasSettings
             }
             showRestoreDialog = true
@@ -171,7 +171,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
             // v1.8.0: Progress indicator (visible during backup/restore)
             if (isBackupInProgress) {
-                val backupStatus by viewModel.backupStatusText.collectAsState()
+                val backupStatus by viewModel.backup.backupStatusText.collectAsState()
                 BackupProgressCard(
                     statusText = backupStatus.ifEmpty {
                         stringResource(R.string.backup_progress_creating)
@@ -278,13 +278,13 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             onDismiss = {
                 showEncryptionPasswordDialog = false
                 // Die Datei hat der Speichern-Dialog schon angelegt, ohne Passwort bliebe sie leer liegen.
-                pendingBackupUri?.let(viewModel::discardBackupFile)
+                pendingBackupUri?.let(viewModel.backup::discardBackupFile)
                 pendingBackupUri = null
             },
             onConfirm = { password ->
                 showEncryptionPasswordDialog = false
                 pendingBackupUri?.let { uri ->
-                    viewModel.createBackup(uri, password, pendingIncludeServerSettings)
+                    viewModel.backup.createBackup(uri, password, pendingIncludeServerSettings)
                 }
                 pendingBackupUri = null
             },
@@ -304,7 +304,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                 showDecryptionPasswordDialog = false
                 pendingRestoreUri?.let { uri ->
                     when (restoreSource) {
-                        RestoreSource.LocalFile -> viewModel.restoreFromFile(
+                        RestoreSource.LocalFile -> viewModel.backup.restoreFromFile(
                             uri,
                             selectedRestoreMode,
                             password,
@@ -336,13 +336,13 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                             // v1.8.0: Schedule restore with delay for dialog close
                             pendingRestoreAction = {
                                 // 🔐 v1.7.0: Check if backup is encrypted
-                                viewModel.checkBackupEncryption(
+                                viewModel.backup.checkBackupEncryption(
                                     uri = uri,
                                     onEncrypted = {
                                         showDecryptionPasswordDialog = true
                                     },
                                     onPlaintext = {
-                                        viewModel.restoreFromFile(
+                                        viewModel.backup.restoreFromFile(
                                             uri,
                                             selectedRestoreMode,
                                             password = null,
@@ -358,7 +358,7 @@ fun BackupSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     RestoreSource.Server -> {
                         // v1.8.0: Schedule restore with delay for dialog close
                         pendingRestoreAction = {
-                            viewModel.restoreFromServer(selectedRestoreMode)
+                            viewModel.backup.restoreFromServer(selectedRestoreMode)
                         }
                         triggerRestore++
                     }

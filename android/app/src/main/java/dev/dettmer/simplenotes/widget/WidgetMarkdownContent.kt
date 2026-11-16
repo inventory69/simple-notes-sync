@@ -81,7 +81,7 @@ internal sealed interface WidgetRenderItem {
 
     data class Paragraph(val text: String) : WidgetRenderItem
 
-    data class TaskItem(val text: String, val isChecked: Boolean) : WidgetRenderItem
+    data class TaskItem(val text: String, val isChecked: Boolean, val level: Int = 0) : WidgetRenderItem
 
     data class ListItem(val text: String) : WidgetRenderItem
 
@@ -156,7 +156,8 @@ internal fun flattenToRenderItems(
                         result.add(
                             WidgetRenderItem.TaskItem(
                                 text = item.text,
-                                isChecked = item.isChecked
+                                isChecked = item.isChecked,
+                                level = item.level
                             )
                         )
                     }
@@ -288,7 +289,8 @@ internal fun WidgetMarkdownView(
                         Row(
                             modifier = GlanceModifier
                                 .fillMaxWidth()
-                                .padding(bottom = 4.dp),
+                                .padding(bottom = 4.dp)
+                                .widgetIndent(item.level),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(

@@ -9,7 +9,7 @@ import java.util.UUID
  * v1.9.0 (F04): originalOrder für Position-Restore bei Un-check
  * v1.11.0: createdAt für Sort-by-Creation-Date
  * v2.5.0: indentationLevel für Vorbereitung Nested-Checklists (siehe Analyseplan §2.4.2).
- *         Aktuell rein persistiert; UI rendert flach. DnD-Logik (DragDropListState)
+ *         Unterpunkte (eine Ebene) siehe [ChecklistNesting]. DnD-Logik (DragDropListState)
  *         referenziert das Feld NICHT — Constraints §13 bleibt eingehalten.
  *
  * @property id Eindeutige ID für Sync-Konflikterkennung
@@ -24,12 +24,12 @@ import java.util.UUID
 data class ChecklistItem(
     val id: String = UUID.randomUUID().toString(),
     val text: String = "",
-    var isChecked: Boolean = false,
+    override var isChecked: Boolean = false,
     var order: Int = 0,
     val originalOrder: Int = order, // 🆕 v1.9.0 (F04): Remembers creation position for restore on un-check
     val createdAt: Long = System.currentTimeMillis(), // 🆕 v1.11.0: Timestamp for sort-by-creation-date
-    val indentationLevel: Int = 0 // 🆕 v2.5.0: Vorbereitung Nested-Checklists (siehe Analyseplan §2.4.2)
-) {
+    override val indentationLevel: Int = 0 // 🆕 v2.5.0, genutzt seit Unterpunkten: 0 oder 1, siehe ChecklistNesting
+) : ChecklistRow {
     companion object {
         // 🆕 v1.11.0: Monoton steigender Timestamp — verhindert gleiche createdAt-Werte
         // wenn mehrere Items in derselben Millisekunde erstellt werden.

@@ -93,9 +93,9 @@ import kotlinx.coroutines.launch
 @Suppress("LongMethod")
 @Composable
 fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavigateToServerSettings: () -> Unit) {
-    val isServerConfigured by viewModel.isServerConfigured.collectAsState()
-    val offlineMode by viewModel.offlineMode.collectAsState()
-    val exportProgress by viewModel.markdownExportProgress.collectAsState()
+    val isServerConfigured by viewModel.server.isServerConfigured.collectAsState()
+    val offlineMode by viewModel.server.offlineMode.collectAsState()
+    val exportProgress by viewModel.markdown.markdownExportProgress.collectAsState()
 
     // Progress dialog for the initial markdown export (moved here from MarkdownSettingsScreen)
     exportProgress?.let { progress ->
@@ -225,19 +225,19 @@ fun SyncSettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onNavig
 @Suppress("LongMethod")
 @Composable
 private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
-    val triggerOnSave by viewModel.triggerOnSave.collectAsState()
-    val triggerOnResume by viewModel.triggerOnResume.collectAsState()
-    val triggerWifiConnect by viewModel.triggerWifiConnect.collectAsState()
-    val triggerPeriodic by viewModel.triggerPeriodic.collectAsState()
-    val triggerBoot by viewModel.triggerBoot.collectAsState()
-    val syncInterval by viewModel.syncInterval.collectAsState()
+    val triggerOnSave by viewModel.sync.triggerOnSave.collectAsState()
+    val triggerOnResume by viewModel.sync.triggerOnResume.collectAsState()
+    val triggerWifiConnect by viewModel.sync.triggerWifiConnect.collectAsState()
+    val triggerPeriodic by viewModel.sync.triggerPeriodic.collectAsState()
+    val triggerBoot by viewModel.sync.triggerBoot.collectAsState()
+    val syncInterval by viewModel.sync.syncInterval.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.sync_section_triggers)) {
         SettingsSwitch(
             title = stringResource(R.string.sync_trigger_on_save_title),
             subtitle = stringResource(R.string.sync_trigger_on_save_subtitle),
             checked = triggerOnSave,
-            onCheckedChange = { viewModel.setTriggerOnSave(it) },
+            onCheckedChange = { viewModel.sync.setTriggerOnSave(it) },
             icon = Icons.Default.Save,
             enabled = isServerConfigured
         )
@@ -246,7 +246,7 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
             title = stringResource(R.string.sync_trigger_on_resume_title),
             subtitle = stringResource(R.string.sync_trigger_on_resume_subtitle),
             checked = triggerOnResume,
-            onCheckedChange = { viewModel.setTriggerOnResume(it) },
+            onCheckedChange = { viewModel.sync.setTriggerOnResume(it) },
             icon = Icons.Default.PhonelinkRing,
             enabled = isServerConfigured
         )
@@ -255,7 +255,7 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
             title = stringResource(R.string.sync_trigger_wifi_connect_title),
             subtitle = stringResource(R.string.sync_trigger_wifi_connect_subtitle),
             checked = triggerWifiConnect,
-            onCheckedChange = { viewModel.setTriggerWifiConnect(it) },
+            onCheckedChange = { viewModel.sync.setTriggerWifiConnect(it) },
             icon = Icons.Default.Wifi,
             enabled = isServerConfigured
         )
@@ -264,7 +264,7 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
             title = stringResource(R.string.sync_trigger_periodic_title),
             subtitle = stringResource(R.string.sync_trigger_periodic_subtitle),
             checked = triggerPeriodic,
-            onCheckedChange = { viewModel.setTriggerPeriodic(it) },
+            onCheckedChange = { viewModel.sync.setTriggerPeriodic(it) },
             icon = Icons.Default.Schedule,
             enabled = isServerConfigured
         )
@@ -292,7 +292,7 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
             SettingsRadioGroup(
                 options = intervalOptions,
                 selectedValue = syncInterval,
-                onValueSelected = { viewModel.setSyncInterval(it) }
+                onValueSelected = { viewModel.sync.setSyncInterval(it) }
             )
         }
 
@@ -300,7 +300,7 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
             title = stringResource(R.string.sync_trigger_boot_title),
             subtitle = stringResource(R.string.sync_trigger_boot_subtitle),
             checked = triggerBoot,
-            onCheckedChange = { viewModel.setTriggerBoot(it) },
+            onCheckedChange = { viewModel.sync.setTriggerBoot(it) },
             icon = Icons.Default.SettingsInputAntenna,
             enabled = isServerConfigured
         )
@@ -323,8 +323,8 @@ private fun SyncTriggersSection(viewModel: SettingsViewModel, isServerConfigured
  */
 @Composable
 private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
-    val wifiOnlySync by viewModel.wifiOnlySync.collectAsState()
-    val maxParallelConnections by viewModel.maxParallelConnections.collectAsState()
+    val wifiOnlySync by viewModel.sync.wifiOnlySync.collectAsState()
+    val maxParallelConnections by viewModel.sync.maxParallelConnections.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.sync_section_network_performance)) {
         // WiFi-Only Toggle
@@ -332,7 +332,7 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
             title = stringResource(R.string.sync_wifi_only_title),
             subtitle = stringResource(R.string.sync_wifi_only_subtitle),
             checked = wifiOnlySync,
-            onCheckedChange = { viewModel.setWifiOnlySync(it) },
+            onCheckedChange = { viewModel.sync.setWifiOnlySync(it) },
             icon = Icons.Default.Wifi,
             enabled = isServerConfigured
         )
@@ -365,7 +365,7 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
         SettingsRadioGroup(
             options = parallelOptions,
             selectedValue = maxParallelConnections,
-            onValueSelected = { viewModel.setMaxParallelConnections(it) },
+            onValueSelected = { viewModel.sync.setMaxParallelConnections(it) },
             enabled = isServerConfigured
         )
     }
@@ -375,9 +375,9 @@ private fun NetworkSection(viewModel: SettingsViewModel, isServerConfigured: Boo
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
-    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
-    val notificationsErrorsOnly by viewModel.notificationsErrorsOnly.collectAsState()
-    val notificationsServerWarning by viewModel.notificationsServerWarning.collectAsState()
+    val notificationsEnabled by viewModel.sync.notificationsEnabled.collectAsState()
+    val notificationsErrorsOnly by viewModel.sync.notificationsErrorsOnly.collectAsState()
+    val notificationsServerWarning by viewModel.sync.notificationsServerWarning.collectAsState()
 
     // 🆕 v1.11.0-B: Permission-aware notification toggle
     val context = LocalContext.current
@@ -427,10 +427,10 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
     // - Permission granted after user intentionally went to system settings → enable toggle
     LaunchedEffect(hasNotificationPermission.value) {
         if (!hasNotificationPermission.value && notificationsEnabled) {
-            viewModel.setNotificationsEnabled(false)
+            viewModel.sync.setNotificationsEnabled(false)
         } else if (hasNotificationPermission.value && pendingNotificationEnable) {
             pendingNotificationEnable = false
-            viewModel.setNotificationsEnabled(true)
+            viewModel.sync.setNotificationsEnabled(true)
         }
     }
 
@@ -439,7 +439,7 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasNotificationPermission.value = granted
-        viewModel.setNotificationsEnabled(granted)
+        viewModel.sync.setNotificationsEnabled(granted)
     }
 
     // ── Permission Rationale Dialog ──
@@ -461,7 +461,7 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
             dismissButton = {
                 TextButton(onClick = {
                     showPermissionRationale = false
-                    viewModel.setNotificationsEnabled(false)
+                    viewModel.sync.setNotificationsEnabled(false)
                 }) {
                     Text(stringResource(android.R.string.cancel))
                 }
@@ -497,7 +497,7 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
             dismissButton = {
                 TextButton(onClick = {
                     showPermissionSettingsDialog = false
-                    viewModel.setNotificationsEnabled(false)
+                    viewModel.sync.setNotificationsEnabled(false)
                 }) {
                     Text(stringResource(android.R.string.cancel))
                 }
@@ -516,7 +516,7 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         if (hasNotificationPermission.value) {
                             // Permission already granted — just enable
-                            viewModel.setNotificationsEnabled(true)
+                            viewModel.sync.setNotificationsEnabled(true)
                         } else if (activity != null &&
                             ActivityCompat.shouldShowRequestPermissionRationale(
                                 activity,
@@ -548,11 +548,11 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
                         }
                     } else {
                         // Pre-Android 13 — no runtime permission needed
-                        viewModel.setNotificationsEnabled(true)
+                        viewModel.sync.setNotificationsEnabled(true)
                     }
                 } else {
                     // User wants to disable — always allowed
-                    viewModel.setNotificationsEnabled(false)
+                    viewModel.sync.setNotificationsEnabled(false)
                 }
             },
             icon = if (notificationsEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
@@ -564,7 +564,7 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
                 title = stringResource(R.string.notifications_errors_only_title),
                 subtitle = stringResource(R.string.notifications_errors_only_subtitle),
                 checked = notificationsErrorsOnly,
-                onCheckedChange = { viewModel.setNotificationsErrorsOnly(it) },
+                onCheckedChange = { viewModel.sync.setNotificationsErrorsOnly(it) },
                 icon = Icons.Default.ErrorOutline
             )
 
@@ -572,7 +572,7 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
                 title = stringResource(R.string.notifications_server_warning_title),
                 subtitle = stringResource(R.string.notifications_server_warning_subtitle),
                 checked = notificationsServerWarning,
-                onCheckedChange = { viewModel.setNotificationsServerWarning(it) },
+                onCheckedChange = { viewModel.sync.setNotificationsServerWarning(it) },
                 icon = Icons.Default.Warning
             )
         }
@@ -586,16 +586,14 @@ private fun NotificationSettingsSection(viewModel: SettingsViewModel, isServerCo
  */
 @Composable
 private fun MarkdownSection(viewModel: SettingsViewModel, isServerConfigured: Boolean) {
-    val markdownAutoSync by viewModel.markdownAutoSync.collectAsState()
-    val serverUrl by viewModel.serverUrl.collectAsState()
-    val syncFolderName by viewModel.syncFolderName.collectAsState()
+    val markdownAutoSync by viewModel.markdown.markdownAutoSync.collectAsState()
+    val folderPath by viewModel.server.markdownFolderUrl.collectAsState()
 
     SettingsSectionCard(title = stringResource(R.string.settings_markdown)) {
         SettingsHint(text = stringResource(R.string.markdown_info))
 
         // Used MD folder (only meaningful once a server is connected)
         if (isServerConfigured) {
-            val folderPath = "$serverUrl/$syncFolderName-md"
             val clipboard = LocalClipboard.current
             val scope = rememberCoroutineScope()
 
@@ -644,7 +642,7 @@ private fun MarkdownSection(viewModel: SettingsViewModel, isServerConfigured: Bo
                 stringResource(R.string.markdown_auto_sync_subtitle)
             },
             checked = markdownAutoSync,
-            onCheckedChange = { viewModel.setMarkdownAutoSync(it) },
+            onCheckedChange = { viewModel.markdown.setMarkdownAutoSync(it) },
             icon = Icons.Default.Description,
             enabled = isServerConfigured
         )
@@ -656,7 +654,7 @@ private fun MarkdownSection(viewModel: SettingsViewModel, isServerConfigured: Bo
             SettingsButton(
                 text = stringResource(R.string.markdown_manual_sync_button),
                 icon = Icons.Outlined.Sync,
-                onClick = { viewModel.performManualMarkdownSync() },
+                onClick = { viewModel.markdown.performManualMarkdownSync() },
                 enabled = isServerConfigured,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )

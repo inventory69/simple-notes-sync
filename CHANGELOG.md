@@ -8,6 +8,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.24.0] - 2026-11-16
+
+### ✨ New Features
+
+**Sub-Items in Checklists** ([b9853ae](https://github.com/inventory69/simple-notes-sync/commit/b9853ae), [0d31150](https://github.com/inventory69/simple-notes-sync/commit/0d31150))
+- Checklist items can be indented one level as sub-items. A parent and its sub-items sort, drag and move across the divider together
+- Checking a parent checks its sub-items, unchecking a sub-item unchecks its parent
+- Note cards, both widgets, the PDF export and sharing show the indent. Google Keep imports keep their sub-items
+- The Markdown files on the server list sub-items without indent for now, so older app versions keep them
+- Thanks to [@ASFHU](https://github.com/ASFHU) for the idea! ([#71](https://github.com/inventory69/simple-notes-sync/discussions/71))
+
+**Formatting in the Editor** ([3494365](https://github.com/inventory69/simple-notes-sync/commit/3494365), [f657f73](https://github.com/inventory69/simple-notes-sync/commit/f657f73), [48b595f](https://github.com/inventory69/simple-notes-sync/commit/48b595f))
+- A second tap on bold, italic, strikethrough or code removes the formatting instead of adding another pair of markers
+- New design: the floating formatting bar is slimmer and moves along with the keyboard when it opens or closes
+- New design: a tap that only clears a text selection in reading mode no longer starts editing
+- New design: turning the word counter off also hides the "Edited" line in the editor
+- Thanks to [@hgwebs4](https://github.com/hgwebs4) ([#179](https://github.com/inventory69/simple-notes-sync/issues/179), [#180](https://github.com/inventory69/simple-notes-sync/issues/180)) and [@Fs00](https://github.com/Fs00) ([#131](https://github.com/inventory69/simple-notes-sync/discussions/131)) for the feedback!
+
+**Adding Checklist Items (Beta)** ([b82c263](https://github.com/inventory69/simple-notes-sync/commit/b82c263), [016ca6d](https://github.com/inventory69/simple-notes-sync/commit/016ca6d))
+- In the new design, a round button at the bottom adds checklist items, and sorting moves into the menu
+- The sync banner keeps the same gap below the search field as the cards
+
+### 🐛 Bug Fixes
+
+**Notes Stay Intact While Saving** ([d648553](https://github.com/inventory69/simple-notes-sync/commit/d648553), [52bf9ef](https://github.com/inventory69/simple-notes-sync/commit/52bf9ef), [99c8d05](https://github.com/inventory69/simple-notes-sync/commit/99c8d05))
+- A note is written in one step, so a full storage or the app closing during a save no longer leaves an empty note behind
+- If a save fails, the editor says so and tries again with the next save
+- Changes from the list, the trash and the widget apply to the latest saved version of a note
+
+**Sync Keeps Every Edit** ([42e0e14](https://github.com/inventory69/simple-notes-sync/commit/42e0e14), [99c8d05](https://github.com/inventory69/simple-notes-sync/commit/99c8d05))
+- An edit saved while a sync uploads the same note is kept and goes up with the next sync
+- If a sync brings a newer version while the note is open, the next save shows a conflict instead of replacing the server version
+
+**Moving Notes on Apache and Nextcloud** ([60921ae](https://github.com/inventory69/simple-notes-sync/commit/60921ae), [9f435c6](https://github.com/inventory69/simple-notes-sync/commit/9f435c6))
+- Moving a note or renaming a folder keeps the note on servers that check versions on upload, such as Apache and Nextcloud
+- After undoing a folder deletion, its notes stay in place and no longer land in the trash with the next sync
+
+**Widgets** ([e2fd022](https://github.com/inventory69/simple-notes-sync/commit/e2fd022), [5208be6](https://github.com/inventory69/simple-notes-sync/commit/5208be6))
+- Ticking two items quickly keeps both ticks
+- Very long notes no longer leave the widgets blank
+
+**Very Long Words** ([264d5d2](https://github.com/inventory69/simple-notes-sync/commit/264d5d2))
+- Pasting a very long word without spaces, such as a Base64 block, no longer closes the app, and notes that contain one open normally
+
+**Settings and Folders** ([839eb61](https://github.com/inventory69/simple-notes-sync/commit/839eb61), [5a2f1ab](https://github.com/inventory69/simple-notes-sync/commit/5a2f1ab), [b82c263](https://github.com/inventory69/simple-notes-sync/commit/b82c263))
+- A quick double tap on back in a settings screen no longer leaves an empty screen
+- The Markdown section shows the folder path the sync actually uses
+- Long folder titles keep a gap to the note count and to the selection checkbox
+
+---
+
 ## [2.23.0] - 2026-11-14
 
 ### ✨ New Features

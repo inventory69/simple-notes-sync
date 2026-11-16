@@ -1,12 +1,12 @@
 # Features
 
-Everything Simple Notes Sync does, as of v2.23.0. What changed in which version is in the [changelog](../CHANGELOG.md).
+Everything Simple Notes Sync does, as of v2.24.0. What changed in which version is in the [changelog](../CHANGELOG.md).
 
 ## Writing
 
 - Text notes and checklists. A text note can be turned into a checklist and back.
 - Markdown with live highlighting while you type, and a rendered preview with selectable text. Choose whether notes open in the editor or in the preview.
-- A formatting toolbar, including a code block button.
+- A formatting toolbar, including a code block button. A second tap on bold, italic, strikethrough or code removes it again.
 - Tables, with a toolbar button to insert one. The preview and the PDF export draw a real grid, note cards and widgets show each row on one line.
 - Bare URLs become links. Checkboxes written in Markdown can be ticked in the editor.
 - Pasting from a web page, Word, Google Docs or Telegram keeps headings, lists, links and tables as Markdown. Plain text is the fallback.
@@ -22,6 +22,7 @@ Everything Simple Notes Sync does, as of v2.23.0. What changed in which version 
 - Tap to check, long press to drag. Dragging an item across the divider checks or unchecks it.
 - Sort manually, alphabetically, unchecked first, checked last, or by creation date. Checked items sit below a divider with a count.
 - Unchecking puts an item back where it was.
+- One level of sub-items. A parent and its sub-items sort and move together, checking a parent checks its sub-items.
 - Read mode: item texts are locked, drag handles and menus are hidden, tapping a row checks it. Existing checklists can open in read mode by default.
 
 ## Organizing and display

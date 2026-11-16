@@ -19,6 +19,10 @@ import io.mockk.runs
 import io.mockk.unmockkObject
 import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -100,5 +104,44 @@ class ToggleChecklistItemActionTest {
         val saved = toggle(context(setOf("Privat")), folder = "privat")
 
         assertEquals(SyncStatus.LOCAL_ONLY, saved.syncStatus)
+    }
+
+    @Test
+    fun `zwei gleichzeitige Tipps gehen beide durch`() = runBlocking {
+        // Zwei Tipps kurz nacheinander, während der Prozess noch startet, laufen gleichzeitig los.
+        // Ohne Lesen und Schreiben in einem Zug laden beide denselben Stand, einer geht verloren.
+        val ctx = context(emptySet())
+        val storage = NotesStorage(ctx)
+        repeat(40) { round ->
+            val id = "race-$round"
+            storage.saveNote(
+                Note(
+                    id = id,
+                    title = "Einkauf",
+                    content = "",
+                    deviceId = "test",
+                    noteType = NoteType.CHECKLIST,
+                    checklistItems = listOf(
+                        ChecklistItem(id = "a", text = "Milch", order = 0),
+                        ChecklistItem(id = "b", text = "Brot", order = 1)
+                    )
+                )
+            )
+            listOf("a", "b").map { itemId ->
+                launch(Dispatchers.Default) {
+                    ToggleChecklistItemAction().onAction(
+                        ctx,
+                        mockk<GlanceId>(),
+                        actionParametersOf(
+                            NoteWidgetActionKeys.KEY_NOTE_ID to id,
+                            NoteWidgetActionKeys.KEY_ITEM_ID to itemId
+                        )
+                    )
+                }
+            }.joinAll()
+
+            val items = storage.loadNote(id)!!.checklistItems!!
+            assertTrue("round $round lost a tap: $items", items.all { it.isChecked })
+        }
     }
 }

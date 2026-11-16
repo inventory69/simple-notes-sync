@@ -365,6 +365,7 @@
     <string name="delete_item">Element löschen</string>
     <string name="note_is_empty">Notiz ist leer</string>
     <string name="note_saved">Notiz gespeichert</string>
+    <string name="note_save_failed">Notiz konnte nicht gespeichert werden. Ist der Speicher voll?</string>
     <string name="note_deleted">Notiz gelöscht</string>
     <!-- ============================= -->
     <!-- SETTINGS - MAIN               -->
@@ -1118,6 +1119,8 @@
     <string name="checklist_item_menu">Eintrag-Optionen</string>
     <string name="checklist_copy_text">Text kopieren</string>
     <string name="checklist_duplicate_item">Eintrag duplizieren</string>
+    <string name="checklist_indent">Einrücken</string>
+    <string name="checklist_outdent">Ausrücken</string>
     <string name="checklist_copy_to_checklist">In andere Checkliste kopieren</string>
     <string name="checklist_copy_to_checklist_title">In Checkliste kopieren</string>
     <string name="checklist_copy_to_checklist_empty">Keine anderen Checklisten vorhanden. Erstelle zuerst eine weitere Checkliste.</string>

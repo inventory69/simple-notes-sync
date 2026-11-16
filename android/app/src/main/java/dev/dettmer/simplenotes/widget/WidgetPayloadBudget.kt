@@ -3,6 +3,7 @@ package dev.dettmer.simplenotes.widget
 import android.content.Context
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.utils.Logger
 
 /**
@@ -37,6 +38,15 @@ import dev.dettmer.simplenotes.utils.Logger
  * [SHARED_BUDGET_BYTES] liegt bewusst unter den gemessenen ~500 KB: die Messung stammt von
  * einem Launcher, und wie viel Puffer ein fremder beim Kaltstart selbst belegt, ist
  * geräteabhängig.
+ *
+ * **Textlänge:** Die Zeilenkosten sind mit kurzen Texten gemessen. Ein Zeichen kostet
+ * [TEXT_BYTES_PER_CHAR] Bytes (UTF-16, und Glance komponiert Hoch- und Querformat), eine
+ * 250k-Notiz allein sprengte also das ganze Budget. Deshalb geht jede Notiz nur über
+ * [clippedForWidget] ins Widget: Titel und Listen-Vorschauen auf das, was ihre `maxLines` zeigen
+ * können, Checklisten-Einträge im Notiz-Widget (entsperrt ohne `maxLines`) auf
+ * [CHECKLIST_ITEM_CHARS], der Markdown-Text auf [WidgetItemCaps.markdownChars], das sich ein
+ * Viertel des Zeilenbudgets nimmt. Die festen Kappen sind nicht eingerechnet; sind alle Texte
+ * länger, kostet eine Zeile bis zu ~15 % mehr, das deckt der Abstand zu den 500 KB.
  */
 internal object WidgetPayloadBudget {
     /** Gemeinsames Budget aller platzierten Widgets. ~20 % Abstand zur gemessenen Grenze. */
@@ -60,6 +70,19 @@ internal object WidgetPayloadBudget {
     /** Untergrenze, damit ein Widget bei sehr vielen Instanzen nicht leer wirkt. */
     private const val MIN_ITEMS = 5
 
+    /** 2 Bytes UTF-16 mal zwei Größenvarianten (Hoch- und Querformat). */
+    private const val TEXT_BYTES_PER_CHAR = 4
+
+    /** Markdown-Widgets geben ein Viertel ihres Zeilenbudgets an die Textlänge ab. */
+    private const val MARKDOWN_TEXT_SHARE = 4
+    private const val MIN_MARKDOWN_CHARS = 1_000
+
+    /** Zeichen je sichtbarer Zeile einer Vorschau, großzügig für breite Widgets. */
+    const val PREVIEW_LINE_CHARS = 80
+
+    /** Checklisten-Eintrag im Notiz-Widget, gut vier Zeilen. */
+    const val CHECKLIST_ITEM_CHARS = 200
+
     private const val TAG = "WidgetPayloadBudget"
 
     /**
@@ -80,7 +103,8 @@ internal object WidgetPayloadBudget {
             Logger.d(
                 TAG,
                 "$count Widget(s) platziert → Liste ${it.listRows}, " +
-                    "Checkliste ${it.checklistItems}, Markdown ${it.markdownItems}"
+                    "Checkliste ${it.checklistItems}, Markdown ${it.markdownItems} " +
+                    "(${it.markdownChars} Zeichen)"
             )
         }
     }
@@ -89,10 +113,12 @@ internal object WidgetPayloadBudget {
     fun forWidgetCount(widgetCount: Int): WidgetItemCaps {
         val perWidget = SHARED_BUDGET_BYTES / widgetCount.coerceAtLeast(1)
         val forRows = (perWidget - WIDGET_BASE_BYTES).coerceAtLeast(0)
+        val forMarkdownText = forRows / MARKDOWN_TEXT_SHARE
         return WidgetItemCaps(
             listRows = cap(forRows, LIST_ROW_BYTES, MAX_LIST_ROWS),
             checklistItems = cap(forRows, CHECKLIST_ITEM_BYTES, MAX_CHECKLIST_ITEMS),
-            markdownItems = cap(forRows, MARKDOWN_ITEM_BYTES, MAX_MARKDOWN_ITEMS)
+            markdownItems = cap(forRows - forMarkdownText, MARKDOWN_ITEM_BYTES, MAX_MARKDOWN_ITEMS),
+            markdownChars = (forMarkdownText / TEXT_BYTES_PER_CHAR).coerceAtLeast(MIN_MARKDOWN_CHARS)
         )
     }
 
@@ -104,8 +130,28 @@ internal object WidgetPayloadBudget {
 internal data class WidgetItemCaps(
     val listRows: Int,
     val checklistItems: Int,
-    val markdownItems: Int
+    val markdownItems: Int,
+    /** Höchstlänge des Markdown-Texts im Notiz-Widget, siehe [clippedForWidget]. */
+    val markdownChars: Int
 )
+
+/**
+ * Kürzt Titel, Text und Checklisten-Einträge auf das, was das Widget zeigen kann, siehe
+ * [WidgetPayloadBudget]. Nur für die Anzeige: Aktionen laden die Notiz per ID neu, diese Kopie
+ * wird nie gespeichert.
+ */
+internal fun Note.clippedForWidget(contentChars: Int, itemChars: Int): Note = copy(
+    title = title.clipForWidget(WidgetPayloadBudget.PREVIEW_LINE_CHARS),
+    content = content.clipForWidget(contentChars),
+    checklistItems = checklistItems?.map { it.copy(text = it.text.clipForWidget(itemChars)) }
+)
+
+internal fun String.clipForWidget(maxChars: Int): String {
+    if (length <= maxChars) return this
+    // Kein halbes Surrogatpaar (Emoji) am Schnitt stehen lassen
+    val end = if (this[maxChars - 1].isHighSurrogate()) maxChars - 1 else maxChars
+    return substring(0, end) + "…"
+}
 
 /**
  * Reicht die Caps an die Zeilen-Composables durch. Als CompositionLocal statt als Parameter,

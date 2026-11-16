@@ -83,15 +83,15 @@ class SettingsViewModelFolderChangeTest {
     // ───── remoteTargetChangePending flow: false → true → false after revert ─────
     @Test
     fun `remoteTargetChangePending flips on change and back on revert`() {
-        assertFalse(vm.remoteTargetChangePending.value)
+        assertFalse(vm.server.remoteTargetChangePending.value)
 
-        vm.updateSyncFolderName("archive")
-        awaitCondition { vm.remoteTargetChangePending.value }
-        assertTrue(vm.remoteTargetChangePending.value)
+        vm.server.updateSyncFolderName("archive")
+        awaitCondition { vm.server.remoteTargetChangePending.value }
+        assertTrue(vm.server.remoteTargetChangePending.value)
 
-        vm.onFolderChangeCancelled()
-        awaitCondition { !vm.remoteTargetChangePending.value }
-        assertEquals(Constants.DEFAULT_SYNC_FOLDER_NAME, vm.syncFolderName.value)
+        vm.server.onFolderChangeCancelled()
+        awaitCondition { !vm.server.remoteTargetChangePending.value }
+        assertEquals(Constants.DEFAULT_SYNC_FOLDER_NAME, vm.server.syncFolderName.value)
     }
 
     // ───── requestRemoteChangeDecision(): unsyncedCount counts only PENDING + LOCAL_ONLY ─────
@@ -101,11 +101,11 @@ class SettingsViewModelFolderChangeTest {
         seedNote("pending", SyncStatus.PENDING)
         seedNote("local-only", SyncStatus.LOCAL_ONLY)
 
-        vm.updateSyncFolderName("archive")
-        vm.requestRemoteChangeDecision()
-        awaitCondition { vm.folderChangePrompt.value != null }
+        vm.server.updateSyncFolderName("archive")
+        vm.server.requestRemoteChangeDecision()
+        awaitCondition { vm.server.folderChangePrompt.value != null }
 
-        val prompt = vm.folderChangePrompt.value
+        val prompt = vm.server.folderChangePrompt.value
         assertEquals(2, prompt?.unsyncedCount)
         assertEquals(1, prompt?.localOnlyCount)
         assertEquals(Constants.DEFAULT_SYNC_FOLDER_NAME, prompt?.oldLabel)
@@ -115,14 +115,14 @@ class SettingsViewModelFolderChangeTest {
     // ───── Cancel: syncFolderName reverted in state AND in prefs ─────
     @Test
     fun `onFolderChangeCancelled reverts state and prefs`() {
-        val confirmed = vm.syncFolderName.value
-        vm.updateSyncFolderName("archive")
+        val confirmed = vm.server.syncFolderName.value
+        vm.server.updateSyncFolderName("archive")
 
-        vm.onFolderChangeCancelled()
+        vm.server.onFolderChangeCancelled()
 
-        assertEquals(confirmed, vm.syncFolderName.value)
+        assertEquals(confirmed, vm.server.syncFolderName.value)
         assertEquals(confirmed, fakePrefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null))
-        assertFalse(vm.remoteTargetChangePending.value)
+        assertFalse(vm.server.remoteTargetChangePending.value)
     }
 
     // ───── Migrate: resetAllSyncStatusToPending() ran, confirmedSyncFolderName advanced ─────
@@ -130,10 +130,10 @@ class SettingsViewModelFolderChangeTest {
     fun `onFolderChangeConfirmedMigrate resets sync status and advances confirmed folder`() {
         seedNote("synced", SyncStatus.SYNCED)
         fakePrefs.edit().putString("etag_json_synced", "e1").apply()
-        vm.updateSyncFolderName("archive")
+        vm.server.updateSyncFolderName("archive")
 
-        vm.onFolderChangeConfirmedMigrate()
-        awaitCondition { !vm.remoteTargetChangePending.value }
+        vm.server.onFolderChangeConfirmedMigrate()
+        awaitCondition { !vm.server.remoteTargetChangePending.value }
 
         val reloaded = runBlocking { NotesStorage(app).loadAllNotes(forceReload = true) }
         assertTrue(reloaded.all { it.syncStatus == SyncStatus.PENDING })
@@ -143,36 +143,36 @@ class SettingsViewModelFolderChangeTest {
     // ───── Switch while offline: guard reverts without touching the network layer ─────
     @Test
     fun `onFolderChangeConfirmedSwitch reverts folder when offline`() {
-        val confirmed = vm.syncFolderName.value
-        vm.setOfflineMode(true)
-        vm.updateSyncFolderName("archive")
+        val confirmed = vm.server.syncFolderName.value
+        vm.server.setOfflineMode(true)
+        vm.server.updateSyncFolderName("archive")
 
-        vm.onFolderChangeConfirmedSwitch()
+        vm.server.onFolderChangeConfirmedSwitch()
 
-        assertEquals(confirmed, vm.syncFolderName.value)
+        assertEquals(confirmed, vm.server.syncFolderName.value)
         assertEquals(confirmed, fakePrefs.getString(Constants.KEY_SYNC_FOLDER_NAME, null))
-        assertFalse(vm.remoteTargetChangePending.value)
+        assertFalse(vm.server.remoteTargetChangePending.value)
     }
 
     // ───── Completion event: Race-Fix (warm-plotting-thompson) — Navigation darf erst nach
     // diesem Signal erfolgen, auch im synchronen Offline-Zweig ─────
     @Test
     fun `onFolderChangeConfirmedSwitch emits completion event when offline`() = runBlocking {
-        val confirmed = vm.syncFolderName.value
-        vm.setOfflineMode(true)
-        vm.updateSyncFolderName("archive")
+        val confirmed = vm.server.syncFolderName.value
+        vm.server.setOfflineMode(true)
+        vm.server.updateSyncFolderName("archive")
 
         // Dispatchers.Main (UnconfinedTestDispatcher) statt runBlocking's Default-Dispatcher:
         // sonst startet der Collector erst beim nächsten Suspend-Point des Testkörpers, also
         // NACH dem synchronen tryEmit() unten — das Signal ginge am Subscriber vorbei.
         var completed = false
-        val job = launch(Dispatchers.Main) { vm.folderChangeCompleted.collect { completed = true } }
-        vm.onFolderChangeConfirmedSwitch()
+        val job = launch(Dispatchers.Main) { vm.server.folderChangeCompleted.collect { completed = true } }
+        vm.server.onFolderChangeConfirmedSwitch()
         awaitCondition { completed }
         job.cancel()
 
-        assertEquals(confirmed, vm.syncFolderName.value)
-        assertFalse(vm.folderChangeInProgress.value)
+        assertEquals(confirmed, vm.server.syncFolderName.value)
+        assertFalse(vm.server.folderChangeInProgress.value)
     }
 
     // ───── Erstkonfiguration: ohne je bestätigte Verbindung kein Gate auf Ordnerwechsel ─────
@@ -187,7 +187,7 @@ class SettingsViewModelFolderChangeTest {
             every { getString(any(), *anyVararg()) } returns "msg"
         }
         val freshVm = SettingsViewModel(freshApp)
-        freshVm.updateSyncFolderName("archive")
-        assertFalse(freshVm.remoteTargetChangePending.value)
+        freshVm.server.updateSyncFolderName("archive")
+        assertFalse(freshVm.server.remoteTargetChangePending.value)
     }
 }

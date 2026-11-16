@@ -5,8 +5,10 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
+import dev.dettmer.simplenotes.models.ChecklistNesting
 import dev.dettmer.simplenotes.models.ChecklistSortOption
 import dev.dettmer.simplenotes.models.ChecklistSorter
+import dev.dettmer.simplenotes.models.Note
 import dev.dettmer.simplenotes.models.SyncStatus
 import dev.dettmer.simplenotes.storage.FolderStore
 import dev.dettmer.simplenotes.storage.NotesStorage
@@ -42,16 +44,26 @@ class ToggleChecklistItemAction : ActionCallback {
         val noteId = parameters[NoteWidgetActionKeys.KEY_NOTE_ID] ?: return
         val itemId = parameters[NoteWidgetActionKeys.KEY_ITEM_ID] ?: return
 
-        val storage = NotesStorage(context)
-        val note = storage.loadNote(noteId) ?: return
+        // Lesen und Schreiben in einem Zug: zwei schnelle Tipps (oder ein Tipp während der Editor
+        // speichert) laden sonst beide denselben Stand, und der zweite überschreibt den ersten.
+        val folderStore = FolderStore(context)
+        NotesStorage(context).updateNote(noteId) { note ->
+            val status = if (folderStore.isLocalOnly(note.folderName)) SyncStatus.LOCAL_ONLY else SyncStatus.PENDING
+            toggled(note, itemId, status)
+        } ?: return
+        Logger.d(TAG, "Toggled + auto-sorted checklist item '$itemId' in widget")
 
-        val updatedItems = note.checklistItems?.map { item ->
-            if (item.id == itemId) {
-                item.copy(isChecked = !item.isChecked)
-            } else {
-                item
-            }
-        }?.run {
+        SyncScheduler(context).triggerOnSaveSync(reason = "widgetToggle")
+        // Bumpt KEY_LAST_UPDATED aller Widgets, sonst rendern Listen-Widgets den alten Stand
+        WidgetUpdateHelper.refreshAllWidgets(context)
+    }
+
+    /** [note] mit umgeschaltetem Eintrag [itemId], oder null wenn es ihn (oder die Checkliste) nicht gibt. */
+    private fun toggled(note: Note, itemId: String, status: SyncStatus): Note? {
+        val items = note.checklistItems ?: return null
+        val toggled = items.find { it.id == itemId } ?: return null
+        // Unterpunkte: dieselben Gruppenregeln wie im Editor (Oberpunkt abhaken hakt Unterpunkte mit ab)
+        val updatedItems = ChecklistNesting.toggle(items.sortedBy { it.order }, itemId, !toggled.isChecked).run {
             // 🆕 v1.9.0 (F04): Backward compat — old notes (pre-F04) have all originalOrder == 0
             // (Gson default). Only patch if ALL items are 0, meaning F04 was never active for this note.
             // If at least one item has originalOrder != 0, the note was saved with F04 → don't touch.
@@ -61,7 +73,7 @@ class ToggleChecklistItemAction : ActionCallback {
             } else {
                 this
             }
-        } ?: return
+        }
 
         // 🆕 v1.8.1 (IMPL_04): Auto-Sort nach Toggle
         // Konsistent mit NoteEditorViewModel.updateChecklistItemChecked
@@ -73,26 +85,12 @@ class ToggleChecklistItemAction : ActionCallback {
         }
             ?: ChecklistSortOption.MANUAL
 
-        // v2.3.0 (FIX-004): Delegate to ChecklistSorter for all sort options
-        val sortedItems = ChecklistSorter.sort(updatedItems, sortOption)
-
-        val syncStatus = if (FolderStore(context).isLocalOnly(note.folderName)) {
-            SyncStatus.LOCAL_ONLY
-        } else {
-            SyncStatus.PENDING
-        }
-        val updatedNote = note.copy(
-            checklistItems = sortedItems,
+        return note.copy(
+            // v2.3.0 (FIX-004): Delegate to ChecklistSorter for all sort options
+            checklistItems = ChecklistSorter.sort(updatedItems, sortOption),
             updatedAt = System.currentTimeMillis(),
-            syncStatus = syncStatus
+            syncStatus = status
         ).withContentTouched(note)
-
-        storage.saveNote(updatedNote)
-        Logger.d(TAG, "Toggled + auto-sorted checklist item '$itemId' in widget")
-
-        SyncScheduler(context).triggerOnSaveSync(reason = "widgetToggle")
-        // Bumpt KEY_LAST_UPDATED aller Widgets, sonst rendern Listen-Widgets den alten Stand
-        WidgetUpdateHelper.refreshAllWidgets(context)
     }
 }
 
