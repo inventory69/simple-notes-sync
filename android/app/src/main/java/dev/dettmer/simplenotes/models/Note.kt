@@ -74,7 +74,7 @@ data class Note(
 
     /**
      * 🆕 v2.21.0: Hat sich der Inhalt geändert? Typabhängig wie `MarkdownSyncManager`: Bei Checklisten
-     * nur die Items (Text, Haken, Reihenfolge). Deren `content` ist gespeichert der Fallback-Text aus
+     * nur die Items (Text, Haken, Reihenfolge, Ebene). Deren `content` ist gespeichert der Fallback-Text aus
      * [toJson], im Editor `""`, ein Vergleich zählte also jedes Speichern als Inhalt.
      */
     fun contentDiffers(other: Note): Boolean {
@@ -84,7 +84,10 @@ data class Note(
         val theirs = other.checklistItems.orEmpty().sortedBy { it.order }
         return mine.size != theirs.size ||
             mine.zip(theirs).any { (a, b) ->
-                a.text != b.text || a.isChecked != b.isChecked || a.order != b.order
+                a.text != b.text ||
+                    a.isChecked != b.isChecked ||
+                    a.order != b.order ||
+                    a.indentationLevel != b.indentationLevel
             }
     }
 

@@ -481,13 +481,10 @@ private fun ChecklistCardPreview(
             Text(
                 text = "$prefix ${stripInlineFormatting(item.text)}",
                 // Unterpunkte: Einzug als Padding (etwa eine Glyphbreite), nicht als Leerzeichen, sonst
-                // liefe die Durchstreichung erledigter Unterpunkte über den Einzug. Nur eingerückte Zeilen
-                // bekommen das Modifier-Glied (Binder-Budget).
-                modifier = if (item.indentationLevel > 0) {
-                    GlanceModifier.padding(start = (LIST_PREVIEW_INDENT_SP * fontSizeScale * item.indentationLevel).dp)
-                } else {
-                    GlanceModifier
-                },
+                // liefe die Durchstreichung erledigter Unterpunkte über den Einzug. Auch Ebene 0 bekommt
+                // das Padding: der Launcher wendet ein Update auf die vorhandenen Views an, und eine Zeile
+                // ohne Padding-Aktion behielte den Einzug des Unterpunkts, der vorher an ihrer Stelle stand.
+                modifier = GlanceModifier.padding(start = (LIST_PREVIEW_INDENT_SP * fontSizeScale * item.indentationLevel).dp),
                 style = TextStyle(
                     color = if (item.isChecked) GlanceTheme.colors.outline else GlanceTheme.colors.onSurface,
                     fontSize = (12 * fontSizeScale).sp,

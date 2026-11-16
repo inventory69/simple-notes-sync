@@ -720,6 +720,10 @@ private fun ChecklistFullView(note: Note, isLocked: Boolean, glanceId: GlanceId,
 /**
  * Unterpunkte: Einzug je Ebene. Nur bei Ebene > 0 ein zusätzliches Modifier-Glied, damit flache
  * Listen keine Bytes im Binder-Budget kosten (Issue #154).
+ *
+ * Nur hinter einem anderen `padding(...)` verwenden: Glance fasst alle Paddings zu einer Aktion
+ * zusammen, Ebene 0 schickt dann `start = 0` mit. Ohne Grund-Padding fehlte bei Ebene 0 jede
+ * Padding-Aktion, und eine wiederverwendete Zeile behielte den Einzug ihres Vorgängers.
  */
 internal fun GlanceModifier.widgetIndent(level: Int): GlanceModifier =
     if (level > 0) padding(start = (WIDGET_INDENT_DP * level).dp) else this
