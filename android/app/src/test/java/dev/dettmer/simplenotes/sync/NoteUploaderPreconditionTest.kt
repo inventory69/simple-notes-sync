@@ -93,17 +93,17 @@ class NoteUploaderPreconditionTest {
         block()
     }
 
+    private fun resource(etag: String?) = WebDavResource(
+        href = URI("/notes/$noteId.json"),
+        modified = Date(),
+        contentLength = 1,
+        isDirectory = false,
+        etag = etag
+    )
+
     /** Server-Listing, das die Notiz mit [etag] enthält (Pre-Upload-Snapshot). */
     private fun WebDavClient.serverHasNote(etag: String?) {
-        every { listOrNull(any()) } returns listOf(
-            WebDavResource(
-                href = URI("/notes/$noteId.json"),
-                modified = Date(),
-                contentLength = 1,
-                isDirectory = false,
-                etag = etag
-            )
-        )
+        every { listOrNull(any()) } returns listOf(resource(etag))
     }
 
     @Test fun `PUT carries the cached E-Tag as If-Match`() = runTest {
@@ -124,6 +124,8 @@ class NoteUploaderPreconditionTest {
         val webdav = webdav {
             serverHasNote(cachedETag)
             every { put(any(), any(), any(), any()) } throws WebDavException("PUT failed: 412", 412)
+            // Zwischen Snapshot und PUT hat ein anderes Gerät geschrieben.
+            every { list(any(), 0) } returns listOf(resource("\"server-v2-from-other-device\""))
         }
 
         val result = uploader().uploadAll(webdav, serverUrl)
@@ -155,6 +157,32 @@ class NoteUploaderPreconditionTest {
         val result = uploader(connectionManager).uploadAll(webdav, serverUrl)
 
         assertEquals("the note must still reach the server", 1, result.uploadedCount)
+        assertEquals(0, result.conflictCount)
+        assertTrue("server must be remembered as precondition-less", flag.captured)
+        assertEquals(SyncStatus.SYNCED, storage.loadNote(noteId)!!.syncStatus)
+    }
+
+    // #182: Nutstore/坚果云 meldet per PROPFIND denselben ETag, lehnt ihn als If-Match aber
+    // mit 412 ab. Ohne Gegenprüfung blieb jede bearbeitete Notiz dauerhaft im Konflikt.
+    @Test fun `a 412 while the server still reports the cached E-Tag falls back and remembers it`() = runTest {
+        givenPendingNote()
+        val connectionManager = mockk<ConnectionManager>(relaxed = true) {
+            every { preconditionsUnsupported } returns false
+        }
+        val flag = slot<Boolean>()
+        every { connectionManager.preconditionsUnsupported = capture(flag) } just Runs
+        val webdav = webdav {
+            serverHasNote("server-v1") // Nutstore: ohne Quotes
+            every { list(any(), 0) } returns listOf(resource("server-v1"))
+            every {
+                put(any(), any(), any(), isNull(inverse = true))
+            } throws WebDavException("PUT failed: 412", 412)
+            every { put(any(), any(), any(), isNull()) } returns "server-v2"
+        }
+
+        val result = uploader(connectionManager).uploadAll(webdav, serverUrl)
+
+        assertEquals("the note must reach the server", 1, result.uploadedCount)
         assertEquals(0, result.conflictCount)
         assertTrue("server must be remembered as precondition-less", flag.captured)
         assertEquals(SyncStatus.SYNCED, storage.loadNote(noteId)!!.syncStatus)
