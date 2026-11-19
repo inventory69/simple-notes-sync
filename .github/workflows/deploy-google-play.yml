@@ -145,16 +145,16 @@ jobs:
           # same signing key, same R8), but with diagnostics pre-enabled so testers can hand
           # over a sync log without hunting for the 5-tap easter egg.
           if [ "${{ steps.target.outputs.track }}" = "production" ]; then
-            echo "task=bundleStandardRelease" >> $GITHUB_OUTPUT
-            echo "dir=standardRelease" >> $GITHUB_OUTPUT
-            echo "mapping=android/app/build/outputs/mapping/standardRelease/mapping.txt" >> $GITHUB_OUTPUT
+            echo "task=bundlePlayRelease" >> $GITHUB_OUTPUT
+            echo "dir=playRelease" >> $GITHUB_OUTPUT
+            echo "mapping=android/app/build/outputs/mapping/playRelease/mapping.txt" >> $GITHUB_OUTPUT
           else
-            echo "task=bundleStandardBeta" >> $GITHUB_OUTPUT
-            echo "dir=standardBeta" >> $GITHUB_OUTPUT
-            echo "mapping=android/app/build/outputs/mapping/standardBeta/mapping.txt" >> $GITHUB_OUTPUT
+            echo "task=bundlePlayBeta" >> $GITHUB_OUTPUT
+            echo "dir=playBeta" >> $GITHUB_OUTPUT
+            echo "mapping=android/app/build/outputs/mapping/playBeta/mapping.txt" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build AAB (standard flavor)
+      - name: Build AAB (play flavor)
         run: |
           cd android
           ./gradlew ${{ steps.variant.outputs.task }} --no-daemon --stacktrace

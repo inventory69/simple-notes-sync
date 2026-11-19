@@ -849,6 +849,10 @@
     <string name="update_changelog_title">Was ist neu</string>
     <string name="update_changelog_dismiss">Alles klar!</string>
     <string name="update_changelog_view_all">Changelog ansehen</string>
+    <!-- Play-Flavor: In-App-Updates -->
+    <string name="play_update_downloading">Update wird geladen…</string>
+    <string name="play_update_ready">Update bereit</string>
+    <string name="play_update_restart">Neu starten</string>
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Backup wird erstellt…</string>
     <string name="backup_progress_restoring">Backup wird wiederhergestellt…</string>

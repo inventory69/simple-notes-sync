@@ -80,8 +80,21 @@ android {
         create("standard") {
             dimension = "distribution"
             // Standard builds: currently identical to fdroid.
-            // Reserved for Google Play specific features if needed.
+            // Shipped as the "Recommended" APK on GitHub Releases (Obtainium).
         }
+
+        // Google Play only (AAB via deploy-google-play.yml). The only flavor that may pull in
+        // proprietary Play libraries (in-app updates). F-Droid builds `fdroid` only, and its
+        // scanner ignores `play*` configurations; IzzyOnDroid takes the `-fdroid.apk`.
+        create("play") {
+            dimension = "distribution"
+        }
+    }
+
+    // fdroid und standard teilen sich die No-op-Stubs für Play-only-Funktionen.
+    sourceSets {
+        getByName("fdroid").kotlin.srcDir("src/noPlay/java")
+        getByName("standard").kotlin.srcDir("src/noPlay/java")
     }
 
     // Signing configuration for release builds
@@ -144,7 +157,7 @@ android {
     }
 
     // F-Droid liefert keine Testtracks aus — die Variante würde nur die Build- und Testmatrix
-    // verdoppeln. Nur `standardBeta` wird gebaut.
+    // verdoppeln. `standardBeta` geht als Beta-APK auf GitHub, `playBeta` in die Play-Testtracks.
     androidComponents {
         beforeVariants(
             selector().withBuildType("beta").withFlavor("distribution" to "fdroid")
@@ -260,6 +273,9 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.coil.compose)
 
+    // Play In-App Updates: proprietär, deshalb nur im `play`-Flavor (nie `implementation`).
+    "playImplementation"(libs.play.app.update.ktx)
+
     // Testing (bleiben so)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
@@ -298,6 +314,8 @@ detekt {
     allRules = false
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline = file("$rootDir/config/detekt/baseline.xml")
+    // Flavor-Quellen liegen außerhalb der detekt-Standardpfade.
+    source.from("src/play/java", "src/noPlay/java")
     
     // Parallel-Verarbeitung für schnellere Checks
     parallel = true
