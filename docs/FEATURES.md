@@ -1,6 +1,6 @@
 # Features
 
-Everything Simple Notes Sync does, as of v2.24.0. What changed in which version is in the [changelog](../CHANGELOG.md).
+Everything Simple Notes Sync does, as of v2.25.0. What changed in which version is in the [changelog](../CHANGELOG.md).
 
 ## Writing
 
@@ -37,6 +37,7 @@ Everything Simple Notes Sync does, as of v2.24.0. What changed in which version 
 - List or grid. The grid has 1 to 5 columns, and the preview length goes from title only to extra long. Timestamps and the note icon can be hidden. Checklist previews in cards and widgets can hide completed items.
 - Light, dark and AMOLED mode, seven color schemes including Dynamic Color on Android 12 and newer, and five text sizes.
 - A custom app title, an in-app changelog and a "What's new" sheet after updates.
+- In the Google Play version, new versions download inside the app and a tap restarts into them. The F-Droid, IzzyOnDroid and GitHub builds contain no Google libraries.
 - A new design as a beta, off by default (Settings, Display). The editor becomes a plain sheet: one tap on the text starts editing and the title moves into the toolbar while you type. The empty title field and the formatting bar can be hidden. The note list gets a search field and one sync button that opens the sync status.
 
 ## Widgets
@@ -49,7 +50,7 @@ Everything Simple Notes Sync does, as of v2.24.0. What changed in which version 
 
 ## Sync
 
-- Works with any WebDAV server: Nextcloud, ownCloud, a NAS or the [Docker server](../server/README.md) in this repo. Basic and Digest authentication.
+- Works with any WebDAV server: Nextcloud, ownCloud, Nutstore, a NAS or the [Docker server](../server/README.md) in this repo. Basic and Digest authentication.
 - Syncs after saving, on app start, when Wi-Fi connects, every 15, 30 or 60 minutes and after a restart. Each trigger can be turned off. See [when the app syncs](../QUICKSTART.md#3-when-the-app-syncs).
 - Folders become subfolders on the server, images are synced too.
 - A note changed on two devices is not overwritten. You choose which version stays, with a side by side comparison. See [SYNC.md](SYNC.md#conflicts).

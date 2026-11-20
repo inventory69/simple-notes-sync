@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.25.0] - 2026-11-20
+
+### ✨ New Features
+
+**In-App Updates in the Google Play Version** ([337de82](https://github.com/inventory69/simple-notes-sync/commit/337de82))
+- The version from Google Play offers a new version once inside the app. The download shows below the sync banner, and afterwards a "Restart" button opens the new version
+- The check only runs on the main screen, so an open note is never interrupted
+- This only affects the Google Play version. The F-Droid, IzzyOnDroid and GitHub builds don't contain the Play libraries and behave as before
+- It takes effect with the next update, because the app needs this version installed first
+
+### 🐛 Bug Fixes
+
+**Syncing with Nutstore** ([d52593f](https://github.com/inventory69/simple-notes-sync/commit/d52593f))
+- Editing an existing note on Nutstore (Jianguoyun) no longer ends in a sync conflict. Nutstore rejects the version check on upload, so the app now confirms the note is unchanged on the server and uploads it without that check
+- A change made on another device is still detected as a conflict
+- Thanks to [@tianyi-peng1](https://github.com/tianyi-peng1) for the report and for testing the fix! ([#182](https://github.com/inventory69/simple-notes-sync/issues/182))
+
+---
+
 ## [2.24.0] - 2026-11-16
 
 ### ✨ New Features

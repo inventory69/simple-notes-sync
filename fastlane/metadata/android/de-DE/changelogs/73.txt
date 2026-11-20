@@ -1,0 +1,8 @@
+🌰 v2.25.0 - Nutstore und Play-Updates
+
+• Fix: Bearbeiten auf Nutstore endet nicht mehr im Konflikt
+• Google-Play-Version: Updates laden in der App, ein Tipp startet die neue Version
+• F-Droid, IzzyOnDroid und GitHub bleiben, wie sie sind
+• Greift ab dem nächsten Update
+
+Danke an @tianyi-peng1!

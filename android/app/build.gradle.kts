@@ -19,8 +19,8 @@ android {
         applicationId = "dev.dettmer.simplenotes"
         minSdk = 24
         targetSdk = 36
-        versionCode = 72  // 🆕 v2.24.0 - checklist sub-items, safer saves and sync, editor feedback
-        versionName = "2.24.0"  // 🆕 v2.24.0 - checklist sub-items, safer saves and sync, editor feedback
+        versionCode = 73  // 🆕 v2.25.0 - Nutstore sync fix, Play in-app updates
+        versionName = "2.25.0"  // 🆕 v2.25.0 - Nutstore sync fix, Play in-app updates
 
         // APK-Size: nur tatsächlich gepflegte Locales ausliefern. AndroidX/Material/
         // Compose schleppen sonst ~70+ Sprachvarianten in resources.arsc mit. Geräte

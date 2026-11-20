@@ -1,0 +1,8 @@
+🌰 v2.25.0 - Nutstore and Play updates
+
+• Fix: editing notes on Nutstore no longer ends in a conflict
+• Google Play version: updates download in the app, a tap restarts into the new version
+• F-Droid, IzzyOnDroid and GitHub builds stay as they are
+• Takes effect with the next update
+
+Thanks to @tianyi-peng1!
