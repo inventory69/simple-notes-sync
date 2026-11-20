@@ -346,6 +346,8 @@ fun MainScreen(
                             progress = syncProgress,
                             modifier = Modifier.fillMaxWidth()
                         )
+                        // Play-Flavor: Banner für In-App-Updates (Download, dann „Neu starten“), sonst No-op.
+                        InAppUpdateBanner()
 
                         // 🆕 v1.9.0 (F06): Filter Chip Row
                         // 🆕 v1.9.0 (F10): + Inline search field

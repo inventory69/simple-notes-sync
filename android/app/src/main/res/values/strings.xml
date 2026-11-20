@@ -856,6 +856,10 @@
     <string name="update_changelog_title">What\'s New</string>
     <string name="update_changelog_dismiss">Got it!</string>
     <string name="update_changelog_view_all">View changelog</string>
+    <!-- Play-Flavor: In-App-Updates (in fdroid/standard unbenutzt) -->
+    <string name="play_update_downloading" tools:ignore="UnusedResources">Downloading update…</string>
+    <string name="play_update_ready" tools:ignore="UnusedResources">Update ready</string>
+    <string name="play_update_restart" tools:ignore="UnusedResources">Restart</string>
     <!-- v1.8.0: Backup Progress -->
     <string name="backup_progress_creating">Creating backup…</string>
     <string name="backup_progress_restoring">Restoring backup…</string>
