@@ -1130,4 +1130,10 @@
     <string name="editor_saved">已保存</string>
     <string name="note_card_hide_checked_toggle">在预览中隐藏已完成项目</string>
     <string name="note_card_hide_checked_description">笔记卡片和小组件上的清单预览仅显示未完成项目以及已完成几项。</string>
+    <string name="note_save_failed">无法保存笔记。存储空间满了吗？</string>
+    <string name="play_update_downloading" tools:ignore="UnusedResources">正下载更新…</string>
+    <string name="play_update_ready" tools:ignore="UnusedResources">更新已就绪</string>
+    <string name="play_update_restart" tools:ignore="UnusedResources">重启</string>
+    <string name="checklist_indent">缩进排版</string>
+    <string name="checklist_outdent">伸出排版</string>
 </resources>
