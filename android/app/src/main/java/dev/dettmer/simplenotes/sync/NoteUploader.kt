@@ -13,6 +13,7 @@ import dev.dettmer.simplenotes.sync.webdav.toIfMatchValue
 import dev.dettmer.simplenotes.utils.ActivityLog
 import dev.dettmer.simplenotes.utils.Constants
 import dev.dettmer.simplenotes.utils.Logger
+import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -569,8 +570,8 @@ internal class NoteUploader(
     /**
      * 🆕 v2.16.0: PUT mit `If-Match` aus dem gecachten ETag.
      *
-     * Ein `412` fliegt bewusst weiter zum Aufrufer — nur der weiß, dass daraus ein Konflikt
-     * wird. `null` bleibt damit die normale Bedeutung "Server schickt keinen ETag".
+     * Ein echtes `412` fliegt bewusst weiter zum Aufrufer, nur der weiß, dass daraus ein
+     * Konflikt wird. `null` bleibt damit die normale Bedeutung "Server schickt keinen ETag".
      *
      * @return den ETag der Antwort, wie [WebDavClient.put].
      */
@@ -589,18 +590,29 @@ internal class NoteUploader(
         return try {
             webdav.put(noteUrl, jsonBytes, "application/json", ifMatch)
         } catch (e: WebDavException) {
-            when (e.statusCode) {
-                in PRECONDITION_UNSUPPORTED_CODES -> {
-                    // Der Server kann die Precondition nicht auswerten. Einmal ohne wiederholen
-                    // und für diese Server-Config merken — ein dauerhaft blockierter Upload wäre
-                    // schlimmer als der fehlende Konfliktschutz.
-                    Logger.w(TAG, "⚠️ Server rejects If-Match (${e.statusCode}) — retrying without precondition")
-                    connectionManager?.preconditionsUnsupported = true
-                    webdav.put(noteUrl, jsonBytes, "application/json")
-                }
-                else -> throw e
-            }
+            val unsupported = e.statusCode in PRECONDITION_UNSUPPORTED_CODES ||
+                (e.statusCode == HTTP_PRECONDITION_FAILED && serverStillReports(webdav, noteUrl, cachedETag))
+            if (!unsupported) throw e
+            // Der Server kann die Precondition nicht auswerten. Einmal ohne wiederholen
+            // und für diese Server-Config merken — ein dauerhaft blockierter Upload wäre
+            // schlimmer als der fehlende Konfliktschutz.
+            Logger.w(TAG, "⚠️ Server rejects If-Match (${e.statusCode}) — retrying without precondition")
+            connectionManager?.preconditionsUnsupported = true
+            webdav.put(noteUrl, jsonBytes, "application/json")
         }
+    }
+
+    /**
+     * 🆕 #182: Meldet der Server nach einem `412` per PROPFIND noch genau den ETag,
+     * den das `If-Match` trug, gibt es keine fremde Fassung, der Server wertet die Precondition
+     * nur falsch aus. Nutstore/坚果云 lehnt so jedes `If-Match` ab. Kostet einen Request, nur im
+     * 412-Fall und danach nie wieder (Flag). Schlägt das Nachsehen fehl, bleibt es ein Konflikt.
+     */
+    private fun serverStillReports(webdav: WebDavClient, noteUrl: String, cachedETag: String?): Boolean = try {
+        etagsMatch(webdav.list(noteUrl, 0).firstOrNull()?.etag, cachedETag)
+    } catch (e: IOException) {
+        Logger.w(TAG, "⚠️ Re-check after 412 failed: ${e.message}")
+        false
     }
 
     /**
