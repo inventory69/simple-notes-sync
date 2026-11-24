@@ -1106,4 +1106,10 @@
     <string name="editor_saved">Сохранено</string>
     <string name="note_card_hide_checked_toggle">Скрывать выполненные пункты в предпросмотре</string>
     <string name="note_card_hide_checked_description">Предпросмотр чек-листов на карточках заметок и виджетах показывает только открытые пункты и количество выполненных.</string>
+    <string name="note_save_failed">Не удалось сохранить заметку. Хранилище заполнено?</string>
+    <string name="play_update_downloading" tools:ignore="UnusedResources">Загрузка обновления…</string>
+    <string name="play_update_ready" tools:ignore="UnusedResources">Обновление готово</string>
+    <string name="play_update_restart" tools:ignore="UnusedResources">Перезапустить</string>
+    <string name="checklist_indent">Отступ</string>
+    <string name="checklist_outdent">Убрать отступ</string>
 </resources>

@@ -420,4 +420,121 @@
     <string name="share_no_calendar_app">Не знайдено застосунок календаря</string>
     <string name="share_error">Неможливо відкрити діалог поширення</string>
     <string name="share_pdf_error">Неможливо створити PDF</string>
+    <string name="action_toggle_pin">Закріплення</string>
+    <string name="section_pinned">Закріплено</string>
+    <string name="section_notes">Нотатки</string>
+    <string name="action_collapse_section">Згорнути %1$s</string>
+    <string name="action_expand_section">Розгорнути %1$s</string>
+    <string name="action_move_section_up">Підняти вище</string>
+    <string name="action_move_section_down">Спустити нижче</string>
+    <string name="section_reorder_hint">Порада: Довге натискання кнопки зі стрілкою змінює порядок розділів.</string>
+    <string name="checklist_items_more">Ще +%d</string>
+    <string name="sync_status_attention">Потребує вашої уваги</string>
+    <plurals name="sync_status_pending_changes">
+        <item quantity="one">%1$d зміна очікує</item>
+        <item quantity="few">%1$d зміни очікують</item>
+        <item quantity="many">%1$d змін очікують</item>
+        <item quantity="other">%1$d змін очікують</item>
+    </plurals>
+    <string name="sync_status_last_sync">Востаннє синзронізовано: %1$s</string>
+    <string name="sync_status_never">ніколи</string>
+    <plurals name="sync_status_conflicts">
+        <item quantity="one">%1$d нотатка потребує рішення</item>
+        <item quantity="few">%1$d нотатки потребують рішення</item>
+        <item quantity="many">%1$d нотаток потребують рішення</item>
+        <item quantity="other">%1$d нотаток потребують рішення</item>
+    </plurals>
+    <string name="sync_status_retry">Спробувати ще</string>
+    <string name="sync_status_syncing">Синхронізується…</string>
+    <string name="sync_status_cannot_sync">Не може синхронізуватися зараз</string>
+    <string name="sync_status_notes_safe">Ваші нотатки залишаються на цьому пристрої та будуть завантажені під час наступної синхронізації.</string>
+    <string name="sync_status_stale">Не синхронізувалося певний час</string>
+    <string name="sync_status_stale_hint">Не синхронізувалося понад добу. Перевірте налаштування підключення та сервера.</string>
+    <string name="sync_legend_expand">Пояснити значки</string>
+    <string name="sync_status_notes_in_sync">Ваші нотатки самосинхронізовані.</string>
+    <string name="sync_status_reason">Причина: %1$s</string>
+    <plurals name="note_stats_words">
+        <item quantity="one">%1$d слово</item>
+        <item quantity="few">%1$d слова</item>
+        <item quantity="many">%1$d слів</item>
+        <item quantity="other">%1$d слів</item>
+    </plurals>
+    <plurals name="note_stats_characters">
+        <item quantity="one">%1$d символ</item>
+        <item quantity="few">%1$d символи</item>
+        <item quantity="many">%1$d символів</item>
+        <item quantity="other">%1$d символів</item>
+    </plurals>
+    <string name="note_stats_show">Показати лічильник слів</string>
+    <string name="conflict_banner_title">v2.16.0: вирішення конфліктів у редакторі</string>
+    <string name="conflict_banner_message">Цю нотатку було відредаговано тут і ще десь. Виберіть версію, яку потрібно зберегти — до того часу вона не синхронізована.</string>
+    <string name="conflict_action_keep_local">Залишити моє</string>
+    <string name="conflict_action_use_server">Використовувати серверну версію</string>
+    <string name="conflict_action_compare">Порівняти</string>
+    <string name="conflict_compare_title">Порівняти версії</string>
+    <string name="conflict_compare_local">Ваша версія</string>
+    <string name="conflict_compare_server">Серверна версія</string>
+    <string name="conflict_compare_empty">(без тексту)</string>
+    <string name="conflict_resolved_keep_local">Ваша версія збережена та буде завантажена.</string>
+    <string name="conflict_resolved_use_server">Серверна версія завантажена.</string>
+    <string name="conflict_resolve_failed">Не вдалося вирішити конфлікт. Перевірте з’єднання з сервером.</string>
+    <string name="sync_legend_trash_hint">Видалені нотатки - і нотатки, видалені на іншому пристрої - переміщуються до кошика, де ви можете відновити їх протягом %1$d днів.</string>
+    <string name="sync_moved_to_trash_count">%d переміщено до кошика</string>
+    <plurals name="sync_conflict_count">
+        <item quantity="one">%1$d конфлікт потребує вирішення</item>
+        <item quantity="few">%1$d конфлікти потребують вирішення</item>
+        <item quantity="many">%1$d конфліктів потребують вирішення</item>
+        <item quantity="other">%1$d конфліктів потребують вирішення</item>
+    </plurals>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="one">%1$d нотатку не вивантажено</item>
+        <item quantity="few">%1$d нотатки не вивантажено</item>
+        <item quantity="many">%1$d нотаток не вивантажено</item>
+        <item quantity="other">%1$d нотаток не вивантажено</item>
+    </plurals>
+    <plurals name="sync_markdown_failed_count">
+        <item quantity="one">%1$d markdown-файл не експортований</item>
+        <item quantity="few">%1$d markdown-файли не експортовані</item>
+        <item quantity="many">%1$d markdown-файлів не експортовані</item>
+        <item quantity="other">%1$d markdown-файлів не експортовані</item>
+    </plurals>
+    <plurals name="sync_assets_failed_count">
+        <item quantity="one">%1$d зображення не передане</item>
+        <item quantity="few">%1$d зображення не передані</item>
+        <item quantity="many">%1$d зображень не передані</item>
+        <item quantity="other">%1$d зображень не передані</item>
+    </plurals>
+    <string name="sync_markdown_import_failed">Не вдалося імпортувати Markdown</string>
+    <string name="sync_export_resolved">Відсутні файли перенесено</string>
+    <plurals name="sync_notes_synced_count">
+        <item quantity="one">%1$d нотатку синхронізовано</item>
+        <item quantity="few">%1$d нотатки синхронізовано</item>
+        <item quantity="many">%1$d нотаток синхронізовано</item>
+        <item quantity="other">%1$d нотаток синхронізовано</item>
+    </plurals>
+    <string name="sync_deleted_from_server_count">%1$d видалено з сервера</string>
+    <string name="sync_trashed_from_server_count">%1$d в кошику</string>
+    <string name="sync_restored_count">%1$d відновлено</string>
+    <string name="sync_deletion_check_skipped">Перевірку видалення пропущено (неповний перелік серверів)</string>
+    <string name="sync_phase_uploading_exporting_markdown">Завантаження та експорт Markdown…</string>
+    <string name="sort_by_color">Колір</string>
+    <string name="sort_reset_default">Замовчування</string>
+    <string name="sort_checklist_creation_date" tools:ignore="MissingTranslation">Дата створення ↑</string>
+    <string name="sort_checklist_creation_date_desc" tools:ignore="MissingTranslation">Дата створення ↓</string>
+    <string name="delete_folder_message">Як ви хочете видалити цю теку?</string>
+    <string name="delete_folders_message">Як ви хочете видалити ці %1$d теки?</string>
+    <string name="delete_selection_message">Як ви хочете видалити цей вибір?</string>
+    <string name="snackbar_delete_queued_for_sync">Сервер недоступний – видалення поставлено в чергу для наступної синхронізації</string>
+    <string name="snackbar_delete_queued_e2ee">Синхронізація призупинена: видалення поставлено в чергу до відновлення синхронізації</string>
+    <string name="snackbar_folder_removed_from_server">Теку видалено з сервера</string>
+    <string name="snackbar_folder_sync_queued">Тека синхронізується після повторного підключення</string>
+    <string name="trash_title">Кошик</string>
+    <string name="settings_trash_subtitle">Відновити нотатки або остаточно їх видалити</string>
+    <string name="trash_empty_state">Кошик порожній</string>
+    <string name="trash_retention_duration_title">Видалити нотатки з кошика після</string>
+    <string name="trash_retention_settings_cd">Налаштування зберігання в кошику</string>
+    <string name="trash_retention_immediate">Негайно</string>
+    <string name="trash_retention_immediate_hint">Існуючі елементи в кошику будуть негайно видалені.</string>
+    <string name="trash_retention_hint">Нотатки в кошику видаляються назавжди за %1$d днів.</string>
+    <string name="trash_retention_hint_immediate">Видалені нотатки видаляються назавжди одразу після вікна скасування.</string>
 </resources>

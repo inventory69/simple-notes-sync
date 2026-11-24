@@ -1036,4 +1036,26 @@
     <string name="cert_dialog_trust">Stol på</string>
     <string name="notification_sync_warning_certificate_message">Tjenersertifikat ikke stolt på</string>
     <string name="notification_sync_warning_certificate_detail">Ingenting har blitt synket på %d timer fordi tjenersertifikatet ikke er stolt på, f.eks. etter en fornyelse. Test tilkoblingen i tjenerinnstillingene.</string>
+    <plurals name="sync_upload_failed_count">
+        <item quantity="one">%1$d notat ikke lastet opp</item>
+        <item quantity="other">%1$d notater ikke lastet opp</item>
+    </plurals>
+    <string name="note_save_failed">Kunne ikke lagre notatet. Tomt for lagringsplass?</string>
+    <string name="settings_new_design_toggle">Nytt design (beta)</string>
+    <string name="settings_new_design_description">Prøv det nye redigeringsfeltet og notatlisten. Skru av for å gå tilbake til nåværende design.</string>
+    <string name="editor_formatting_bar_toggle">Formateringslinje</string>
+    <string name="editor_formatting_bar_description">Vis Markdown-knappene mens notat blir skrevet.</string>
+    <string name="editor_title_field_toggle">Tittelfelt</string>
+    <string name="editor_title_field_description">Vis en tom tittel over nye og ikke navngitte notater. Notater med en tittel viser den alltid.</string>
+    <string name="editor_add_title">Legg til tittel</string>
+    <string name="editor_meta_edited">Redigerte %1$s</string>
+    <string name="editor_checklist_meta">%1$d åpne · %2$d fullførte</string>
+    <string name="editor_saved">Lagret</string>
+    <string name="note_card_hide_checked_toggle">Skjul fullførte elementer i forhåndsvisninger</string>
+    <string name="note_card_hide_checked_description">Sjekklisteforhåndsvisning på notatkort og widgets viser kun ufullførte elementer og hvor mange som er fullførte.</string>
+    <string name="play_update_downloading" tools:ignore="UnusedResources">Laster ned oppdatering…</string>
+    <string name="play_update_ready" tools:ignore="UnusedResources">Oppdatering klar</string>
+    <string name="play_update_restart" tools:ignore="UnusedResources">Start på nytt</string>
+    <string name="checklist_indent">Innrykk</string>
+    <string name="checklist_outdent">Utrykk</string>
 </resources>
